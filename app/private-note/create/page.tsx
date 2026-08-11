@@ -2,155 +2,150 @@ import Link from "next/link";
 
 export default function CreatePrivateNotePage() {
   return (
-    <main className="min-h-screen bg-[#faf8f3] text-[#14233b]">
+    <main className="min-h-screen bg-[#f7f5ef] text-[#14233b]">
       {/* Header */}
-      <header className="flex h-[88px] items-center justify-between border-b border-[#14233b]/10 bg-white/90 px-[5vw]">
+      <header className="mx-auto flex h-24 max-w-7xl items-center justify-between px-6 lg:px-10">
         <Link
           href="/"
-          className="flex items-center gap-3 text-[24px] font-bold tracking-[3px] text-[#14233b]"
+          className="group flex items-center gap-3 text-[18px] font-semibold tracking-[3px]"
         >
-          <span className="text-[22px] text-[#bd8d42]">✦</span>
+          <span className="text-xl text-[#b88a45] transition-transform duration-300 group-hover:rotate-12">
+            ✦
+          </span>
           WHOLEGACY
         </Link>
 
         <Link
           href="/private-note"
-          className="text-sm text-[#5d6674] transition hover:text-[#bd8d42]"
+          className="text-sm text-[#707783] transition-colors hover:text-[#14233b]"
         >
           ← Private Note
         </Link>
       </header>
 
       {/* Main */}
-      <section className="mx-auto max-w-[850px] px-6 pb-20 pt-[90px]">
+      <section className="mx-auto max-w-5xl px-5 pb-24 pt-16 sm:px-8 lg:pt-24">
         {/* Intro */}
-        <div className="mb-[55px] text-center">
-          <div className="mb-5 text-xs font-bold tracking-[3px] text-[#b8863c]">
-            WHOLEGACY · PRIVATE NOTE
-          </div>
+        <div className="mx-auto max-w-3xl text-center">
+          <p className="mb-6 text-[10px] font-bold uppercase tracking-[4px] text-[#b88a45]">
+            A private space by WHOLEGACY
+          </p>
 
-          <h1 className="font-serif text-[clamp(52px,7vw,86px)] font-normal leading-[0.98] tracking-[-3px]">
-            Create something
+          <h1 className="font-serif text-[clamp(52px,8vw,92px)] font-normal leading-[0.94] tracking-[-4px]">
+            A place for
             <br />
-            <span className="text-[#bd8d42]">private.</span>
+            <em className="text-[#b88a45]">what matters.</em>
           </h1>
 
-          <p className="mx-auto mt-7 max-w-[590px] text-[17px] leading-[1.8] text-[#687180]">
-            Choose your private address, set a password, and write something
-            that matters to you.
+          <p className="mx-auto mt-8 max-w-xl text-[16px] leading-8 text-[#6d7480] sm:text-[18px]">
+            Write a thought, a memory, a message, or something you simply
+            want to keep.
           </p>
         </div>
 
-        {/* Form Card */}
-        <div className="rounded-[22px] border border-[#ded8cc] bg-white p-6 shadow-[0_25px_70px_rgba(20,35,59,0.08)] sm:p-12">
-          {/* Address */}
-          <div className="mb-5 text-[11px] font-bold tracking-[2.2px] text-[#b8863c]">
-            01 — YOUR PRIVATE ADDRESS
+        {/* Editor */}
+        <div className="mx-auto mt-16 max-w-4xl">
+          <div className="overflow-hidden rounded-[2px] border border-[#ded9cf] bg-[#fffefa] shadow-[0_30px_100px_rgba(20,35,59,0.08)]">
+            {/* Note identity bar */}
+            <div className="flex flex-col gap-5 border-b border-[#e7e2d9] px-6 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-10">
+              <div>
+                <p className="mb-2 text-[9px] font-bold uppercase tracking-[3px] text-[#a9a49b]">
+                  Your private address
+                </p>
+
+                <div className="flex items-center gap-1 text-[15px] sm:text-[16px]">
+                  <span className="text-[#98958e]">wholegacy.com/p/</span>
+
+                  <input
+                    type="text"
+                    placeholder="your-name"
+                    autoComplete="off"
+                    spellCheck={false}
+                    className="w-32 border-0 bg-transparent p-0 font-medium text-[#14233b] outline-none placeholder:text-[#c2beb6] sm:w-40"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 text-xs text-[#98958e]">
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#f3eee4] text-[#b88a45]">
+                  🔒
+                </span>
+                Private
+              </div>
+            </div>
+
+            {/* Writing area */}
+            <div className="px-6 pb-10 pt-8 sm:px-10 sm:pb-12 sm:pt-10">
+              <textarea
+                rows={13}
+                placeholder="Begin writing..."
+                className="min-h-[380px] w-full resize-none border-0 bg-transparent font-serif text-[20px] leading-[1.8] text-[#26364d] outline-none placeholder:text-[#c8c4bc] sm:min-h-[430px] sm:text-[22px]"
+              />
+
+              <div className="mt-6 flex items-center justify-between border-t border-[#eee9e0] pt-5">
+                <span className="text-[10px] uppercase tracking-[2px] text-[#aaa69e]">
+                  Your words. Your space.
+                </span>
+
+                <span className="text-xs text-[#aaa69e]">0 words</span>
+              </div>
+            </div>
+
+            {/* Protection */}
+            <div className="border-t border-[#e7e2d9] bg-[#fbf9f4] px-6 py-7 sm:px-10">
+              <div className="grid gap-7 md:grid-cols-[1fr_auto] md:items-end">
+                <div>
+                  <p className="mb-3 text-[9px] font-bold uppercase tracking-[3px] text-[#a9a49b]">
+                    Protect your note
+                  </p>
+
+                  <label
+                    htmlFor="password"
+                    className="mb-2 block text-sm font-medium text-[#14233b]"
+                  >
+                    Password
+                  </label>
+
+                  <input
+                    id="password"
+                    name="password"
+                    type="password"
+                    autoComplete="new-password"
+                    placeholder="Choose a private password"
+                    className="h-12 w-full rounded-none border border-[#dcd7ce] bg-[#fffefa] px-4 text-sm text-[#14233b] outline-none transition focus:border-[#b88a45] md:w-[360px]"
+                  />
+
+                  <p className="mt-2 text-[11px] leading-5 text-[#96938d]">
+                    Keep this password safe. You will need it to access your
+                    note.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  className="flex h-12 items-center justify-center gap-5 rounded-none bg-[#14233b] px-7 text-xs font-semibold uppercase tracking-[1.5px] text-white transition hover:bg-[#1d304c]"
+                >
+                  Keep This Note
+                  <span className="text-[#d0a45d]">→</span>
+                </button>
+              </div>
+            </div>
           </div>
 
-          <label
-            htmlFor="slug"
-            className="mb-2 block text-[15px] font-semibold"
-          >
-            Choose your address
-          </label>
-
-          <div className="flex h-14 overflow-hidden rounded-[11px] border border-[#d9d4cb] bg-[#fcfbf8] focus-within:border-[#bd8d42]">
-            <span className="flex shrink-0 items-center pl-3 text-xs text-[#8a8f98] sm:pl-4 sm:text-sm">
-              wholegacy.com/p/
-            </span>
-
-            <input
-              id="slug"
-              name="slug"
-              type="text"
-              placeholder="your-name"
-              autoComplete="off"
-              spellCheck={false}
-              className="h-full min-w-0 flex-1 border-0 bg-transparent px-1 text-base text-[#14233b] outline-none"
-            />
-          </div>
-
-          <p className="mt-2 text-xs leading-relaxed text-[#858b95]">
-            Use letters, numbers, and hyphens. This address will be used to
-            access your Private Note.
-          </p>
-
-          <div className="my-9 h-px bg-[#e7e2d9]" />
-
-          {/* Password */}
-          <div className="mb-5 text-[11px] font-bold tracking-[2.2px] text-[#b8863c]">
-            02 — PROTECT YOUR NOTE
-          </div>
-
-          <label
-            htmlFor="password"
-            className="mb-2 block text-[15px] font-semibold"
-          >
-            Create a password
-          </label>
-
-          <input
-            id="password"
-            name="password"
-            type="password"
-            placeholder="Enter a password"
-            autoComplete="new-password"
-            className="h-14 w-full rounded-[11px] border border-[#d9d4cb] bg-[#fcfbf8] px-4 text-base text-[#14233b] outline-none transition focus:border-[#bd8d42]"
-          />
-
-          <p className="mt-2 text-xs leading-relaxed text-[#858b95]">
-            Choose a password you can remember. Keep it private.
-          </p>
-
-          <div className="my-9 h-px bg-[#e7e2d9]" />
-
-          {/* Note */}
-          <div className="mb-5 text-[11px] font-bold tracking-[2.2px] text-[#b8863c]">
-            03 — YOUR NOTE
-          </div>
-
-          <label
-            htmlFor="note"
-            className="mb-2 block text-[15px] font-semibold"
-          >
-            Write something that matters
-          </label>
-
-          <textarea
-            id="note"
-            name="note"
-            rows={10}
-            placeholder="Write your thoughts, a message, a memory, or anything you want to keep private..."
-            className="w-full resize-y rounded-[11px] border border-[#d9d4cb] bg-[#fcfbf8] p-4 text-base leading-[1.7] text-[#14233b] outline-none transition focus:border-[#bd8d42]"
-          />
-
-          {/* Bottom */}
-          <div className="mt-7 flex flex-col items-stretch gap-6 border-t border-[#e7e2d9] pt-6 sm:flex-row sm:items-center sm:justify-between">
-            <p className="flex items-center gap-2 text-xs leading-relaxed text-[#777f8b]">
-              <span>🔒</span>
-              Your note will be protected by your password.
-            </p>
-
-            <button
-              type="button"
-              className="inline-flex min-h-14 items-center justify-center gap-4 rounded-[11px] bg-[#bd8d42] px-6 text-sm font-bold text-white shadow-[0_12px_28px_rgba(189,141,66,0.22)] transition hover:bg-[#a97835]"
-            >
-              Create Private Note
-              <span>→</span>
-            </button>
+          {/* Small privacy statement */}
+          <div className="mt-7 flex items-center justify-center gap-2 text-center text-[11px] text-[#99958d]">
+            <span>✦</span>
+            <span>A quiet place for the things worth keeping.</span>
           </div>
         </div>
-
-        <p className="mt-5 text-center text-[11px] text-[#969ba3]">
-          By creating a Private Note, you agree to use WHOLEGACY responsibly.
-        </p>
       </section>
 
       {/* Footer */}
-      <footer className="flex flex-col gap-4 border-t border-[#ded8cc] px-[5vw] py-8 text-center text-xs text-[#7c8490] sm:flex-row sm:justify-between sm:text-left">
-        <span>© {new Date().getFullYear()} WHOLEGACY</span>
-        <span>Your Story. Your Identity. Your Legacy.</span>
+      <footer className="border-t border-[#ded9cf]">
+        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-6 py-8 text-center text-[10px] uppercase tracking-[1.5px] text-[#96938d] sm:flex-row sm:items-center sm:justify-between sm:px-10 sm:text-left">
+          <span>© {new Date().getFullYear()} WHOLEGACY</span>
+          <span>Your Story. Your Identity. Your Legacy.</span>
+        </div>
       </footer>
     </main>
   );
