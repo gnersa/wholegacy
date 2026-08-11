@@ -40,7 +40,7 @@ export default function PrivateNotePage() {
           </div>
 
           <Link href="/private-note/create" className="primary-button">
-            Create a Private Note <span>→</span>
+            Create your Private Note <span>→</span>
           </Link>
 
           <p className="privacy-note">
