@@ -1,32 +1,30 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function Page() {
   const [path, setPath] = useState("");
+  const router = useRouter();
 
-  const handleGo = (e: React.FormEvent<HTMLFormElement>) => {
+  function handleGo(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
     const cleanPath = path.trim().replace(/^\/+|\/+$/g, "");
 
     if (!cleanPath) return;
 
-    window.location.href = `/p/${cleanPath}`;
-  };
+    router.push(`/p/${cleanPath}`);
+  }
 
   return (
-    <main className="flex min-h-screen w-full flex-col items-center justify-center bg-[#c9d1bc] p-4 font-sans">
-      <h1 className="mb-8 text-center font-serif text-3xl font-bold italic tracking-tight text-gray-800 md:text-5xl">
-        It&apos;s your legacy notes.
-      </h1>
-
-      <div className="w-full max-w-4xl rounded-lg border border-[#545341] bg-[#696852] p-6 shadow-xl sm:p-8">
+    <main className="min-h-screen w-full bg-[#0b3c65] font-sans">
+      <div className="flex min-h-screen w-full items-center justify-center px-5">
         <form
           onSubmit={handleGo}
-          className="flex flex-col items-center justify-center gap-3 text-lg text-white sm:flex-row sm:flex-wrap sm:gap-2"
+          className="flex w-full max-w-[720px] flex-col items-center justify-center gap-3 text-center sm:flex-row sm:gap-2"
         >
-          <span className="text-center font-normal text-gray-100">
+          <span className="text-[16px] text-[#dbeaf5] sm:text-[18px]">
             Go to wholegacy.com/p/
           </span>
 
@@ -38,17 +36,17 @@ export default function Page() {
             autoFocus
             autoComplete="off"
             spellCheck={false}
-            className="w-full max-w-[220px] rounded-sm border border-gray-400 bg-white px-3 py-1.5 text-center text-black shadow-inner outline-none focus:border-amber-200 focus:ring-1 focus:ring-amber-200 sm:w-48"
+            className="h-[38px] w-full max-w-[240px] rounded-[3px] border border-gray-400 bg-white px-2 text-[16px] text-black shadow-inner outline-none focus:border-[#c99a4a] focus:ring-1 focus:ring-[#c99a4a] sm:w-[210px]"
           />
 
           <button
             type="submit"
-            className="rounded-sm border border-gray-400 bg-gradient-to-b from-gray-100 to-gray-300 px-5 py-1.5 font-semibold text-black shadow transition-all hover:from-white hover:to-gray-200"
+            className="h-[38px] min-w-[64px] rounded-[3px] border border-gray-400 bg-gradient-to-b from-gray-100 to-gray-300 px-4 text-[15px] font-semibold text-black shadow hover:from-white hover:to-gray-200 active:from-gray-300 active:to-gray-100"
           >
             Go
           </button>
 
-          <span className="text-center text-sm text-gray-200 sm:pl-1">
+          <span className="text-[12px] text-[#b9d2e5] sm:ml-1">
             (or write directly in the address bar)
           </span>
         </form>
