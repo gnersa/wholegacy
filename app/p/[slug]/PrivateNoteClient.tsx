@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 
 type Props = {
   slug: string;
@@ -13,10 +13,18 @@ type NoteTab = {
 };
 
 export default function PrivateNoteClient({ slug }: Props) {
+  /* =========================
+     LOGIN
+  ========================= */
+
   const [password, setPassword] = useState("");
-  const [message, setMessage] = useState("");
+  const [loginMessage, setLoginMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [unlocked, setUnlocked] = useState(false);
+
+  /* =========================
+     NOTES
+  ========================= */
 
   const [tabs, setTabs] = useState<NoteTab[]>([
     {
@@ -28,20 +36,24 @@ export default function PrivateNoteClient({ slug }: Props) {
 
   const [activeTab, setActiveTab] = useState(1);
   const [nextTabId, setNextTabId] = useState(2);
+
   const [saved, setSaved] = useState(true);
 
-  const [editingTabId, setEditingTabId] = useState<number | null>(
-    null
-  );
+  const [editingTabId, setEditingTabId] =
+    useState<number | null>(null);
+
+  /* =========================
+     LOGIN
+  ========================= */
 
   const handleLogin = async () => {
     if (!password.trim()) {
-      setMessage("Please enter your password.");
+      setLoginMessage("Please enter your password.");
       return;
     }
 
     setLoading(true);
-    setMessage("");
+    setLoginMessage("");
 
     try {
       const response = await fetch(
@@ -61,27 +73,36 @@ export default function PrivateNoteClient({ slug }: Props) {
       const result = await response.json();
 
       if (!response.ok || !result.success) {
-        setMessage(
+        setLoginMessage(
           result.message || "Incorrect password."
         );
         return;
       }
 
       setUnlocked(true);
-      setMessage("");
+      setLoginMessage("");
     } catch (error) {
-      console.error("Login error:", error);
+      console.error(error);
 
-      setMessage(
-        "Unable to connect to the server. Please try again."
+      setLoginMessage(
+        "Unable to connect to the server."
       );
     } finally {
       setLoading(false);
     }
   };
 
+  /* =========================
+     ACTIVE NOTE
+  ========================= */
+
   const activeNote =
-    tabs.find((tab) => tab.id === activeTab) || tabs[0];
+    tabs.find((tab) => tab.id === activeTab) ||
+    tabs[0];
+
+  /* =========================
+     CONTENT
+  ========================= */
 
   const handleContentChange = (
     value: string
@@ -100,6 +121,10 @@ export default function PrivateNoteClient({ slug }: Props) {
     setSaved(false);
   };
 
+  /* =========================
+     ADD TAB
+  ========================= */
+
   const addTab = () => {
     const newTab: NoteTab = {
       id: nextTabId,
@@ -113,9 +138,13 @@ export default function PrivateNoteClient({ slug }: Props) {
     ]);
 
     setActiveTab(nextTabId);
-    setNextTabId((id) => id + 1);
+    setNextTabId((current) => current + 1);
     setSaved(false);
   };
+
+  /* =========================
+     DELETE TAB
+  ========================= */
 
   const deleteTab = (id: number) => {
     if (tabs.length === 1) {
@@ -143,6 +172,10 @@ export default function PrivateNoteClient({ slug }: Props) {
     setSaved(false);
   };
 
+  /* =========================
+     RENAME TAB
+  ========================= */
+
   const renameTab = (
     id: number,
     title: string
@@ -169,31 +202,39 @@ export default function PrivateNoteClient({ slug }: Props) {
     setSaved(false);
   };
 
+  /* =========================
+     SAVE
+  ========================= */
+
   const handleSave = () => {
     /*
-      Temporary UI action.
-
-      Database save will be connected
-      in the next step.
+      DATABASE SAVE AKAN DISAMBUNGKAN
+      PADA TAHAP BERIKUTNYA.
     */
 
     setSaved(true);
   };
+
+  /* =========================
+     RELOAD
+  ========================= */
 
   const handleReload = () => {
     /*
-      Temporary UI action.
-
-      Database reload will be connected
-      in the next step.
+      DATABASE RELOAD AKAN DISAMBUNGKAN
+      PADA TAHAP BERIKUTNYA.
     */
 
     setSaved(true);
   };
 
+  /* =========================
+     DELETE WORKSPACE
+  ========================= */
+
   const handleDelete = () => {
     const confirmed = window.confirm(
-      "Are you sure you want to delete this Private Note?"
+      "Are you sure you want to permanently delete this Private Note?"
     );
 
     if (!confirmed) {
@@ -201,74 +242,76 @@ export default function PrivateNoteClient({ slug }: Props) {
     }
 
     /*
-      Temporary UI action.
-
-      Database deletion will be connected
-      in the next step.
+      DELETE DATABASE AKAN DISAMBUNGKAN
+      PADA TAHAP BERIKUTNYA.
     */
 
-    alert(
+    window.alert(
       "Delete function will be connected to the database next."
     );
   };
 
+  /* =========================
+     CHANGE PASSWORD
+  ========================= */
+
   const handleChangePassword = () => {
     /*
-      Temporary UI action.
-
-      Change password dialog/API will be connected
-      in the next step.
+      CHANGE PASSWORD AKAN DISAMBUNGKAN
+      PADA TAHAP BERIKUTNYA.
     */
 
-    alert(
+    window.alert(
       "Change password function will be connected next."
     );
   };
 
-  /*
-   * PASSWORD SCREEN
-   */
+  /* =====================================================
+     PASSWORD SCREEN
+  ===================================================== */
 
   if (!unlocked) {
     return (
-      <main className="flex min-h-screen w-full items-center justify-center bg-[#f3f3f3] p-4 font-sans">
-        <div className="w-full max-w-[420px] border border-[#c8c8c8] bg-white shadow-sm">
-          {/* Header */}
-          <div className="border-b border-[#d5d5d5] bg-[#eeeeee] px-5 py-4">
-            <div className="text-[18px] font-semibold text-[#444]">
+      <main className="private-login">
+        <div className="private-login-box">
+
+          <div className="private-login-header">
+            <div className="private-logo">
               WHOLEGACY
             </div>
 
-            <div className="mt-1 text-xs text-[#777]">
+            <div className="private-login-subtitle">
               Private Note
             </div>
           </div>
 
-          {/* Login */}
-          <div className="p-6">
-            <div className="mb-5 text-center">
-              <div className="text-[16px] font-semibold text-[#444]">
-                Private Note
-              </div>
+          <div className="private-login-body">
 
-              <div className="mt-1 text-sm text-[#777]">
-                /{slug}
-              </div>
+            <div className="private-login-title">
+              Private Note
             </div>
 
-            <label className="mb-2 block text-sm text-[#555]">
+            <div className="private-login-path">
+              /{slug}
+            </div>
+
+            <label
+              htmlFor="private-password"
+              className="private-login-label"
+            >
               Password
             </label>
 
             <input
+              id="private-password"
               type="password"
               value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                setMessage("");
+              onChange={(event) => {
+                setPassword(event.target.value);
+                setLoginMessage("");
               }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
                   handleLogin();
                 }
               }}
@@ -276,61 +319,59 @@ export default function PrivateNoteClient({ slug }: Props) {
               autoComplete="current-password"
               placeholder="Enter password"
               disabled={loading}
-              className="box-border w-full rounded border border-[#bdbdbd] bg-white px-3 py-2 text-sm text-[#333] outline-none focus:border-[#888] focus:ring-1 focus:ring-[#ddd]"
+              className="private-password-input"
             />
 
             <button
               type="button"
               onClick={handleLogin}
               disabled={loading}
-              className="mt-3 w-full rounded border border-[#aaa] bg-gradient-to-b from-[#fafafa] to-[#dedede] px-4 py-2 text-sm font-semibold text-[#333] shadow-sm hover:from-white hover:to-[#e8e8e8] active:from-[#ddd] disabled:cursor-not-allowed disabled:opacity-60"
+              className="private-login-button"
             >
               {loading
                 ? "Unlocking..."
                 : "Unlock"}
             </button>
 
-            {message && (
-              <div className="mt-4 border border-[#e0b4b4] bg-[#fff5f5] px-3 py-2 text-center text-xs text-[#a33]">
-                {message}
+            {loginMessage && (
+              <div className="private-login-error">
+                {loginMessage}
               </div>
             )}
 
-            <div className="mt-5 text-center text-[11px] text-[#999]">
+            <div className="private-login-note">
               This Private Note is password protected.
             </div>
+
           </div>
         </div>
       </main>
     );
   }
 
-  /*
-   * PRIVATE NOTE WORKSPACE
-   */
+  /* =====================================================
+     PRIVATE NOTE WORKSPACE
+  ===================================================== */
 
   return (
-    <main className="flex h-screen w-full flex-col overflow-hidden bg-[#f4f4f4] font-sans text-[#444]">
-      {/* =====================================================
-          TOP MENU BAR
-      ====================================================== */}
+    <main className="private-workspace">
 
-      <header className="flex min-h-[58px] flex-shrink-0 items-center border-b border-[#c9c9c9] bg-[#eeeeee] px-3 shadow-sm">
-        {/* Logo */}
+      {/* =========================
+          TOP MENU
+      ========================= */}
 
-        <div className="flex min-w-[125px] items-center">
-          <div className="text-[18px] font-semibold tracking-tight text-[#444]">
-            WHOLEGACY
-          </div>
+      <header className="private-menubar">
+
+        <div className="private-brand">
+          WHOLEGACY
         </div>
 
-        {/* Toolbar */}
+        <div className="private-toolbar">
 
-        <div className="ml-auto flex items-center gap-1 overflow-x-auto whitespace-nowrap">
           <button
             type="button"
             onClick={handleDelete}
-            className="rounded border border-[#bcbcbc] bg-gradient-to-b from-white to-[#e4e4e4] px-3 py-1.5 text-xs font-medium text-[#444] shadow-sm hover:from-white hover:to-[#f1f1f1]"
+            className="private-button"
           >
             Delete
           </button>
@@ -338,7 +379,7 @@ export default function PrivateNoteClient({ slug }: Props) {
           <button
             type="button"
             onClick={handleChangePassword}
-            className="rounded border border-[#bcbcbc] bg-gradient-to-b from-white to-[#e4e4e4] px-3 py-1.5 text-xs font-medium text-[#444] shadow-sm hover:from-white hover:to-[#f1f1f1]"
+            className="private-button"
           >
             Change password
           </button>
@@ -346,7 +387,7 @@ export default function PrivateNoteClient({ slug }: Props) {
           <button
             type="button"
             onClick={handleSave}
-            className="rounded border border-[#bcbcbc] bg-gradient-to-b from-white to-[#e4e4e4] px-3 py-1.5 text-xs font-medium text-[#444] shadow-sm hover:from-white hover:to-[#f1f1f1]"
+            className="private-button"
           >
             Save
           </button>
@@ -354,150 +395,173 @@ export default function PrivateNoteClient({ slug }: Props) {
           <button
             type="button"
             onClick={handleReload}
-            className="rounded border border-[#bcbcbc] bg-gradient-to-b from-white to-[#e4e4e4] px-3 py-1.5 text-xs font-medium text-[#444] shadow-sm hover:from-white hover:to-[#f1f1f1]"
+            className="private-button"
           >
             Reload
           </button>
+
         </div>
       </header>
 
-      {/* =====================================================
-          SITE / PATH BAR
-      ====================================================== */}
+      {/* =========================
+          PATH / STATUS
+      ========================= */}
 
-      <div className="flex h-[30px] flex-shrink-0 items-center border-b border-[#d0d0d0] bg-[#fafafa] px-3">
-        <span className="text-[11px] text-[#888]">
+      <div className="private-pathbar">
+
+        <span>
           wholegacy.com/p/{slug}
         </span>
 
-        <span className="ml-auto text-[11px] text-[#999]">
-          {saved ? "Saved" : "Unsaved changes"}
+        <span
+          className={
+            saved
+              ? "private-status saved"
+              : "private-status"
+          }
+        >
+          {saved
+            ? "Saved"
+            : "Unsaved changes"}
         </span>
+
       </div>
 
-      {/* =====================================================
-          TAB BAR
-      ====================================================== */}
+      {/* =========================
+          TABS
+      ========================= */}
 
-      <div className="flex min-h-[38px] flex-shrink-0 items-end overflow-x-auto border-b border-[#bdbdbd] bg-[#e7e7e7] px-2">
-        {/* Add Tab */}
+      <div className="private-tabs-wrapper">
 
         <button
           type="button"
           onClick={addTab}
           title="New tab"
-          className="mb-1 mr-1 flex h-[30px] min-w-[32px] items-center justify-center rounded-t border border-[#c0c0c0] bg-gradient-to-b from-[#fafafa] to-[#dedede] text-[18px] leading-none text-[#555] hover:bg-white"
+          className="private-add-tab"
         >
           +
         </button>
 
-        {tabs.map((tab) => {
-          const active =
-            tab.id === activeTab;
+        <div className="private-tabs">
 
-          return (
-            <div
-              key={tab.id}
-              className={`mb-0 flex h-[32px] min-w-[110px] max-w-[220px] items-center border-x border-t ${
-                active
-                  ? "border-[#bdbdbd] bg-white"
-                  : "border-transparent bg-[#dedede]"
-              }`}
-            >
-              {editingTabId === tab.id ? (
-                <input
-                  autoFocus
-                  defaultValue={tab.title}
-                  onBlur={(e) =>
-                    renameTab(
-                      tab.id,
-                      e.target.value
-                    )
-                  }
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
+          {tabs.map((tab) => {
+            const isActive =
+              tab.id === activeTab;
+
+            return (
+              <div
+                key={tab.id}
+                className={
+                  isActive
+                    ? "private-tab active"
+                    : "private-tab"
+                }
+              >
+
+                {editingTabId === tab.id ? (
+                  <input
+                    autoFocus
+                    defaultValue={tab.title}
+                    className="private-tab-input"
+                    onBlur={(event) =>
                       renameTab(
                         tab.id,
-                        e.currentTarget.value
-                      );
+                        event.target.value
+                      )
                     }
+                    onKeyDown={(event) => {
 
-                    if (e.key === "Escape") {
-                      setEditingTabId(null);
+                      if (
+                        event.key ===
+                        "Enter"
+                      ) {
+                        renameTab(
+                          tab.id,
+                          event.currentTarget.value
+                        );
+                      }
+
+                      if (
+                        event.key ===
+                        "Escape"
+                      ) {
+                        setEditingTabId(null);
+                      }
+
+                    }}
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setActiveTab(tab.id)
                     }
-                  }}
-                  className="min-w-0 flex-1 bg-white px-2 text-xs text-[#444] outline-none"
-                />
-              ) : (
+                    onDoubleClick={() =>
+                      setEditingTabId(tab.id)
+                    }
+                    className="private-tab-title"
+                    title="Double-click to rename"
+                  >
+                    {tab.title}
+                  </button>
+                )}
+
                 <button
                   type="button"
                   onClick={() =>
-                    setActiveTab(tab.id)
+                    deleteTab(tab.id)
                   }
-                  onDoubleClick={() =>
-                    setEditingTabId(tab.id)
-                  }
-                  className={`min-w-0 flex-1 truncate px-3 py-1.5 text-left text-xs ${
-                    active
-                      ? "font-semibold text-[#333]"
-                      : "text-[#666]"
-                  }`}
-                  title="Double-click to rename"
+                  className="private-tab-close"
+                  title="Remove tab"
                 >
-                  {tab.title}
+                  ×
                 </button>
-              )}
 
-              {/* Close tab */}
+              </div>
+            );
+          })}
 
-              <button
-                type="button"
-                onClick={() =>
-                  deleteTab(tab.id)
-                }
-                className="mr-1 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded text-xs text-[#888] hover:bg-[#ddd] hover:text-[#333]"
-                title="Remove tab"
-              >
-                ×
-              </button>
-            </div>
-          );
-        })}
+        </div>
       </div>
 
-      {/* =====================================================
+      {/* =========================
           EDITOR
-      ====================================================== */}
+      ========================= */}
 
-      <section className="min-h-0 flex-1 bg-white">
+      <section className="private-editor">
+
         <textarea
           value={activeNote.content}
-          onChange={(e) =>
+          onChange={(event) =>
             handleContentChange(
-              e.target.value
+              event.target.value
             )
           }
           placeholder="your text goes here..."
           spellCheck={false}
-          className="block h-full w-full resize-none border-0 bg-white p-4 font-mono text-[14px] leading-6 text-[#333] outline-none"
+          className="private-textarea"
         />
+
       </section>
 
-      {/* =====================================================
-          BOTTOM STATUS BAR
-      ====================================================== */}
+      {/* =========================
+          FOOTER
+      ========================= */}
 
-      <footer className="flex h-[26px] flex-shrink-0 items-center border-t border-[#d0d0d0] bg-[#eeeeee] px-3 text-[10px] text-[#888]">
+      <footer className="private-footer">
+
         <span>
           WHOLEGACY Private Note
         </span>
 
-        <span className="ml-auto">
+        <span>
           {saved
             ? "Saved"
             : "Unsaved changes"}
         </span>
+
       </footer>
+
     </main>
   );
 }
