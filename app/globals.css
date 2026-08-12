@@ -132,3 +132,770 @@ h2 { font-size: clamp(38px, 4vw, 54px); line-height: 1.08; margin: 0 0 20px; let
   .notify-section h2 { font-size: 32px; }
   .footer-grid { grid-template-columns: 1fr 1fr; }
 }
+
+/* =========================================================
+   WHOLEGACY PRIVATE NOTE
+   ProtectedText-style interface
+   ========================================================= */
+
+.private-workspace {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100dvh;
+
+  display: flex;
+  flex-direction: column;
+
+  overflow: hidden;
+
+  background: #f4f4f4;
+  color: #444;
+
+  font-family:
+    Arial,
+    Helvetica,
+    sans-serif;
+}
+
+
+/* =========================================================
+   TOP MENU
+   ========================================================= */
+
+.private-menubar {
+  min-height: 56px;
+  height: 56px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+
+  padding: 0 14px;
+
+  border-bottom: 1px solid #c9c9c9;
+
+  background: #eeeeee;
+
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.05);
+
+  box-sizing: border-box;
+}
+
+.private-brand {
+  flex-shrink: 0;
+
+  color: #444;
+
+  font-size: 18px;
+  font-weight: 700;
+
+  letter-spacing: 0.04em;
+}
+
+.private-toolbar {
+  margin-left: auto;
+
+  display: flex;
+  align-items: center;
+
+  gap: 5px;
+
+  overflow-x: auto;
+
+  white-space: nowrap;
+}
+
+
+/* =========================================================
+   BUTTONS
+   ========================================================= */
+
+.private-button {
+  appearance: none;
+
+  border: 1px solid #bcbcbc;
+  border-radius: 4px;
+
+  background:
+    linear-gradient(
+      to bottom,
+      #ffffff 0%,
+      #eeeeee 100%
+    );
+
+  color: #444;
+
+  padding: 6px 12px;
+
+  font-family:
+    Arial,
+    Helvetica,
+    sans-serif;
+
+  font-size: 12px;
+  line-height: 1.4;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 1px 1px rgba(0, 0, 0, 0.08);
+
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease;
+}
+
+.private-button:hover {
+  background:
+    linear-gradient(
+      to bottom,
+      #ffffff 0%,
+      #f7f7f7 100%
+    );
+
+  border-color: #999;
+}
+
+.private-button:active {
+  background: #dedede;
+}
+
+
+/* =========================================================
+   PATH BAR
+   ========================================================= */
+
+.private-pathbar {
+  height: 30px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+
+  box-sizing: border-box;
+
+  padding: 0 12px;
+
+  border-bottom: 1px solid #d0d0d0;
+
+  background: #fafafa;
+
+  color: #888;
+
+  font-size: 11px;
+}
+
+.private-status {
+  margin-left: auto;
+
+  color: #a36b6b;
+
+  font-size: 11px;
+}
+
+.private-status.saved {
+  color: #777;
+}
+
+
+/* =========================================================
+   TAB BAR
+   ========================================================= */
+
+.private-tabs-wrapper {
+  min-height: 38px;
+  height: 38px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: flex-end;
+
+  overflow: hidden;
+
+  box-sizing: border-box;
+
+  padding: 0 7px;
+
+  border-bottom: 1px solid #bdbdbd;
+
+  background: #e7e7e7;
+}
+
+.private-add-tab {
+  flex-shrink: 0;
+
+  width: 32px;
+  height: 30px;
+
+  margin: 0 4px 1px 0;
+
+  padding: 0;
+
+  border: 1px solid #c0c0c0;
+  border-radius: 4px 4px 0 0;
+
+  background:
+    linear-gradient(
+      to bottom,
+      #fafafa,
+      #dedede
+    );
+
+  color: #555;
+
+  font-size: 18px;
+  font-weight: 400;
+
+  line-height: 28px;
+
+  cursor: pointer;
+}
+
+.private-add-tab:hover {
+  background: #ffffff;
+}
+
+.private-tabs {
+  display: flex;
+  align-items: flex-end;
+
+  height: 100%;
+
+  min-width: max-content;
+
+  overflow-x: auto;
+  overflow-y: hidden;
+
+  scrollbar-width: none;
+}
+
+.private-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+
+/* =========================================================
+   INDIVIDUAL TAB
+   ========================================================= */
+
+.private-tab {
+  height: 32px;
+
+  min-width: 110px;
+  max-width: 220px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+
+  box-sizing: border-box;
+
+  border: 1px solid transparent;
+  border-bottom: none;
+
+  background: #dedede;
+
+  color: #666;
+}
+
+.private-tab.active {
+  border-color: #bdbdbd;
+
+  background: #ffffff;
+
+  color: #333;
+}
+
+.private-tab-title {
+  min-width: 0;
+
+  flex: 1;
+
+  overflow: hidden;
+
+  white-space: nowrap;
+
+  text-overflow: ellipsis;
+
+  border: 0;
+
+  background: transparent;
+
+  padding: 7px 8px;
+
+  color: inherit;
+
+  font-family:
+    Arial,
+    Helvetica,
+    sans-serif;
+
+  font-size: 12px;
+
+  text-align: left;
+
+  cursor: pointer;
+}
+
+.private-tab.active
+.private-tab-title {
+  font-weight: 600;
+}
+
+.private-tab-input {
+  min-width: 0;
+
+  flex: 1;
+
+  width: 80px;
+
+  border: 0;
+
+  outline: none;
+
+  background: #ffffff;
+
+  padding: 6px 7px;
+
+  color: #333;
+
+  font-family:
+    Arial,
+    Helvetica,
+    sans-serif;
+
+  font-size: 12px;
+}
+
+.private-tab-close {
+  flex-shrink: 0;
+
+  width: 22px;
+  height: 22px;
+
+  margin-right: 3px;
+
+  padding: 0;
+
+  border: 0;
+  border-radius: 3px;
+
+  background: transparent;
+
+  color: #888;
+
+  font-size: 16px;
+
+  line-height: 20px;
+
+  cursor: pointer;
+}
+
+.private-tab-close:hover {
+  background: #ddd;
+
+  color: #333;
+}
+
+
+/* =========================================================
+   EDITOR
+   ========================================================= */
+
+.private-editor {
+  min-height: 0;
+
+  flex: 1;
+
+  width: 100%;
+
+  background: #ffffff;
+
+  overflow: hidden;
+}
+
+.private-textarea {
+  display: block;
+
+  width: 100%;
+  height: 100%;
+
+  box-sizing: border-box;
+
+  resize: none;
+
+  border: 0;
+  outline: none;
+
+  background: #ffffff;
+
+  padding: 14px 16px;
+
+  color: #333;
+
+  font-family:
+    "Courier New",
+    Courier,
+    monospace;
+
+  font-size: 14px;
+
+  line-height: 1.6;
+
+  tab-size: 4;
+
+  white-space: pre-wrap;
+
+  overflow: auto;
+}
+
+.private-textarea::placeholder {
+  color: #aaa;
+
+  opacity: 1;
+}
+
+.private-textarea:focus {
+  outline: none;
+}
+
+
+/* =========================================================
+   FOOTER
+   ========================================================= */
+
+.private-footer {
+  height: 25px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+
+  box-sizing: border-box;
+
+  padding: 0 10px;
+
+  border-top: 1px solid #d0d0d0;
+
+  background: #eeeeee;
+
+  color: #888;
+
+  font-size: 10px;
+}
+
+.private-footer span:last-child {
+  margin-left: auto;
+}
+
+
+/* =========================================================
+   LOGIN SCREEN
+   ========================================================= */
+
+.private-login {
+  width: 100%;
+  min-height: 100vh;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  box-sizing: border-box;
+
+  padding: 20px;
+
+  background: #f3f3f3;
+
+  font-family:
+    Arial,
+    Helvetica,
+    sans-serif;
+}
+
+.private-login-box {
+  width: 100%;
+  max-width: 400px;
+
+  box-sizing: border-box;
+
+  border: 1px solid #c8c8c8;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.private-login-header {
+  padding: 16px 20px;
+
+  border-bottom: 1px solid #d5d5d5;
+
+  background: #eeeeee;
+}
+
+.private-logo {
+  color: #444;
+
+  font-size: 18px;
+  font-weight: 700;
+
+  letter-spacing: 0.04em;
+}
+
+.private-login-subtitle {
+  margin-top: 3px;
+
+  color: #777;
+
+  font-size: 11px;
+}
+
+.private-login-body {
+  padding: 25px;
+}
+
+.private-login-title {
+  color: #444;
+
+  font-size: 16px;
+  font-weight: 600;
+
+  text-align: center;
+}
+
+.private-login-path {
+  margin-top: 4px;
+  margin-bottom: 22px;
+
+  color: #888;
+
+  font-size: 12px;
+
+  text-align: center;
+}
+
+.private-login-label {
+  display: block;
+
+  margin-bottom: 6px;
+
+  color: #555;
+
+  font-size: 12px;
+}
+
+.private-password-input {
+  display: block;
+
+  width: 100%;
+
+  box-sizing: border-box;
+
+  padding: 8px 10px;
+
+  border: 1px solid #bdbdbd;
+  border-radius: 3px;
+
+  background: #ffffff;
+
+  color: #333;
+
+  font-family:
+    Arial,
+    Helvetica,
+    sans-serif;
+
+  font-size: 13px;
+
+  outline: none;
+}
+
+.private-password-input:focus {
+  border-color: #888;
+
+  box-shadow:
+    0 0 0 2px rgba(100, 100, 100, 0.08);
+}
+
+.private-login-button {
+  width: 100%;
+
+  margin-top: 10px;
+
+  padding: 8px 12px;
+
+  border: 1px solid #aaa;
+  border-radius: 3px;
+
+  background:
+    linear-gradient(
+      to bottom,
+      #fafafa,
+      #dedede
+    );
+
+  color: #333;
+
+  font-family:
+    Arial,
+    Helvetica,
+    sans-serif;
+
+  font-size: 12px;
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+.private-login-button:hover {
+  background:
+    linear-gradient(
+      to bottom,
+      #ffffff,
+      #e8e8e8
+    );
+}
+
+.private-login-button:disabled {
+  opacity: 0.6;
+
+  cursor: not-allowed;
+}
+
+.private-login-error {
+  margin-top: 12px;
+
+  padding: 8px 10px;
+
+  border: 1px solid #e0b4b4;
+
+  background: #fff5f5;
+
+  color: #a33;
+
+  font-size: 11px;
+
+  text-align: center;
+}
+
+.private-login-note {
+  margin-top: 18px;
+
+  color: #999;
+
+  font-size: 10px;
+
+  text-align: center;
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 700px) {
+
+  .private-menubar {
+    height: auto;
+    min-height: 54px;
+
+    padding: 7px 8px;
+
+    align-items: center;
+  }
+
+  .private-brand {
+    font-size: 15px;
+  }
+
+  .private-toolbar {
+    gap: 3px;
+  }
+
+  .private-button {
+    padding: 6px 8px;
+
+    font-size: 10px;
+  }
+
+  .private-pathbar {
+    padding: 0 9px;
+
+    font-size: 10px;
+  }
+
+  .private-status {
+    font-size: 10px;
+  }
+
+  .private-tabs-wrapper {
+    padding-left: 5px;
+    padding-right: 5px;
+  }
+
+  .private-tab {
+    min-width: 100px;
+  }
+
+  .private-textarea {
+    padding: 12px;
+
+    font-size: 13px;
+
+    line-height: 1.6;
+  }
+
+  .private-login {
+    padding: 15px;
+  }
+
+  .private-login-body {
+    padding: 20px;
+  }
+}
+
+
+/* =========================================================
+   VERY SMALL MOBILE
+   ========================================================= */
+
+@media (max-width: 430px) {
+
+  .private-menubar {
+    flex-wrap: wrap;
+  }
+
+  .private-brand {
+    width: 100%;
+
+    margin-bottom: 5px;
+  }
+
+  .private-toolbar {
+    width: 100%;
+
+    margin-left: 0;
+
+    justify-content: flex-start;
+  }
+
+  .private-button {
+    padding: 5px 7px;
+
+    font-size: 9px;
+  }
+
+  .private-footer {
+    font-size: 9px;
+  }
+}
