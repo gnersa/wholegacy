@@ -27,9 +27,6 @@ export default function PrivateNoteClient({ slug }: Props) {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("Ready");
 
-  /*
-   * LOAD DATA
-   */
   const loadNotes = async () => {
     try {
       setMessage("Loading...");
@@ -39,9 +36,7 @@ export default function PrivateNoteClient({ slug }: Props) {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          slug,
-        }),
+        body: JSON.stringify({ slug }),
       });
 
       const data = await response.json();
@@ -71,16 +66,10 @@ export default function PrivateNoteClient({ slug }: Props) {
     }
   };
 
-  /*
-   * LOAD WHEN PAGE OPENS
-   */
   useEffect(() => {
     loadNotes();
   }, [slug]);
 
-  /*
-   * SAVE ACTIVE NOTE
-   */
   const saveNote = async () => {
     const note = notes[activeTab];
 
@@ -110,10 +99,6 @@ export default function PrivateNoteClient({ slug }: Props) {
         throw new Error(data.message || "Failed to save.");
       }
 
-      /*
-       * Jika note baru dibuat,
-       * database memberikan ID baru.
-       */
       if (data.note) {
         setNotes((current) =>
           current.map((item, index) =>
@@ -139,9 +124,6 @@ export default function PrivateNoteClient({ slug }: Props) {
     }
   };
 
-  /*
-   * UPDATE TEXT
-   */
   const updateContent = (value: string) => {
     setNotes((current) =>
       current.map((note, index) =>
@@ -157,9 +139,6 @@ export default function PrivateNoteClient({ slug }: Props) {
     setMessage("Unsaved changes");
   };
 
-  /*
-   * ADD NEW TAB
-   */
   const addTab = () => {
     const newNote: Note = {
       id: "",
@@ -173,13 +152,8 @@ export default function PrivateNoteClient({ slug }: Props) {
     setMessage("Unsaved changes");
   };
 
-  /*
-   * REMOVE TAB
-   */
   const removeTab = (index: number) => {
-    if (notes.length === 1) {
-      return;
-    }
+    if (notes.length === 1) return;
 
     const newNotes = notes.filter((_, i) => i !== index);
 
@@ -199,9 +173,6 @@ export default function PrivateNoteClient({ slug }: Props) {
     setMessage("Unsaved changes");
   };
 
-  /*
-   * RENAME TAB
-   */
   const renameTab = (index: number) => {
     const currentTitle = notes[index]?.title || "";
 
@@ -234,8 +205,6 @@ export default function PrivateNoteClient({ slug }: Props) {
 
   return (
     <main className="private-note-app">
-      {/* HEADER */}
-
       <header className="private-note-header">
         <div className="private-note-brand">
           WHOLEGACY
@@ -277,8 +246,6 @@ export default function PrivateNoteClient({ slug }: Props) {
         </div>
       </header>
 
-      {/* URL BAR */}
-
       <div className="private-note-info">
         <span>
           wholegacy.com/p/{slug}
@@ -288,8 +255,6 @@ export default function PrivateNoteClient({ slug }: Props) {
           {message}
         </span>
       </div>
-
-      {/* TABS */}
 
       <div className="private-note-tabs">
         <button
@@ -334,8 +299,6 @@ export default function PrivateNoteClient({ slug }: Props) {
         ))}
       </div>
 
-      {/* EDITOR */}
-
       <section className="private-note-editor">
         <textarea
           value={activeNote?.content || ""}
@@ -344,8 +307,6 @@ export default function PrivateNoteClient({ slug }: Props) {
           spellCheck={false}
         />
       </section>
-
-      {/* FOOTER */}
 
       <footer className="private-note-footer">
         <span>
