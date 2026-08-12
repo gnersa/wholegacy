@@ -1,10 +1,13 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { sql } from "../../../../lib/db";
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const slug = String(body.slug || "").trim();
+
+    const slug = String(body.slug || "")
+      .trim()
+      .toLowerCase();
 
     if (!slug) {
       return NextResponse.json(
@@ -16,8 +19,31 @@ export async function POST(request: Request) {
       );
     }
 
+    /*
+     * CHECK LOGIN COOKIE
+     */
+    const cookieName = `wholegacy_private_${slug}`;
+    const authCookie = request.cookies.get(cookieName);
+
+    if (!authCookie || authCookie.value !== "authenticated") {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Authentication required.",
+        },
+        { status: 401 }
+      );
+    }
+
+    /*
+     * FIND WORKSPACE
+     */
     const workspaceResult = await sql`
-      SELECT id, slug, created_at, updated_at
+      SELECT
+        id,
+        slug,
+        created_at,
+        updated_at
       FROM private_workspaces
       WHERE slug = ${slug}
       LIMIT 1
@@ -35,6 +61,9 @@ export async function POST(request: Request) {
 
     const workspace = workspaceResult[0];
 
+    /*
+     * GET NOTES
+     */
     const notes = await sql`
       SELECT
         id,
