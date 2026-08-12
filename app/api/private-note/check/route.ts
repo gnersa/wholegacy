@@ -10,7 +10,6 @@ export async function POST(request: Request) {
       .replace(/^\/+|\/+$/g, "")
       .toLowerCase();
 
-    // Jika kosong
     if (!slug) {
       return NextResponse.json(
         {
@@ -21,7 +20,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Hanya huruf, angka, dan tanda -
     if (!/^[a-z0-9-]+$/.test(slug)) {
       return NextResponse.json(
         {
@@ -32,7 +30,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Cek apakah slug sudah ada di Neon
     const result = await sql`
       SELECT id
       FROM private_workspaces
@@ -40,7 +37,6 @@ export async function POST(request: Request) {
       LIMIT 1
     `;
 
-    // Jika sudah digunakan
     if (result.length > 0) {
       return NextResponse.json({
         available: false,
@@ -49,7 +45,6 @@ export async function POST(request: Request) {
       });
     }
 
-    // Jika belum digunakan, buat workspace
     await sql`
       INSERT INTO private_workspaces (slug)
       VALUES (${slug})
