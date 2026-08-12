@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { sql } from "@/lib/db";
+import { sql } from "../../../../lib/db";
 
 export async function POST(request: Request) {
   try {
@@ -8,7 +8,10 @@ export async function POST(request: Request) {
 
     if (!slug) {
       return NextResponse.json(
-        { success: false, message: "Slug is required." },
+        {
+          success: false,
+          message: "Slug is required.",
+        },
         { status: 400 }
       );
     }
@@ -22,7 +25,10 @@ export async function POST(request: Request) {
 
     if (workspaceResult.length === 0) {
       return NextResponse.json(
-        { success: false, message: "Workspace not found." },
+        {
+          success: false,
+          message: "Workspace not found.",
+        },
         { status: 404 }
       );
     }
@@ -44,12 +50,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      workspace: {
-        id: workspace.id,
-        slug: workspace.slug,
-        created_at: workspace.created_at,
-        updated_at: workspace.updated_at,
-      },
+      workspace,
       notes,
     });
   } catch (error) {
