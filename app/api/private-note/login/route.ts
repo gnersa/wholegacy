@@ -50,6 +50,10 @@ export async function POST(request: Request) {
       );
     }
 
+    /*
+     * MVP:
+     * password disimpan langsung di password_hash.
+     */
     if (password !== workspace.password_hash) {
       return NextResponse.json(
         {
@@ -60,11 +64,31 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json({
+    /*
+     * LOGIN BERHASIL
+     *
+     * Simpan slug ke HTTP cookie.
+     * Cookie ini akan tetap ada ketika browser di-refresh.
+     */
+    const response = NextResponse.json({
       success: true,
       message: "Password correct.",
       slug: workspace.slug,
     });
+
+    response.cookies.set(
+      `wholegacy_private_${workspace.slug}`,
+      "authenticated",
+      {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: `/p/${workspace.slug}`,
+        maxAge: 60 * 60 * 24 * 30,
+      }
+    );
+
+    return response;
   } catch (error) {
     console.error("Private Note login error:", error);
 
