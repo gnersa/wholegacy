@@ -1,567 +1,361 @@
 "use client";
 
-import React, { useState } from "react";
+import { useEffect, useState } from "react";
+
+type Note = {
+  id: string;
+  title: string;
+  content: string;
+  tab_order: number;
+};
 
 type Props = {
   slug: string;
 };
 
-type NoteTab = {
-  id: number;
-  title: string;
-  content: string;
-};
-
 export default function PrivateNoteClient({ slug }: Props) {
-  /* =========================
-     LOGIN
-  ========================= */
-
-  const [password, setPassword] = useState("");
-  const [loginMessage, setLoginMessage] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [unlocked, setUnlocked] = useState(false);
-
-  /* =========================
-     NOTES
-  ========================= */
-
-  const [tabs, setTabs] = useState<NoteTab[]>([
+  const [notes, setNotes] = useState<Note[]>([
     {
-      id: 1,
+      id: "",
       title: "Note 1",
       content: "",
+      tab_order: 0,
     },
   ]);
 
-  const [activeTab, setActiveTab] = useState(1);
-  const [nextTabId, setNextTabId] = useState(2);
+  const [activeTab, setActiveTab] = useState(0);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState("Ready");
 
-  const [saved, setSaved] = useState(true);
-
-  const [editingTabId, setEditingTabId] =
-    useState<number | null>(null);
-
-  /* =========================
-     LOGIN
-  ========================= */
-
-  const handleLogin = async () => {
-    if (!password.trim()) {
-      setLoginMessage("Please enter your password.");
-      return;
-    }
-
-    setLoading(true);
-    setLoginMessage("");
-
+  /*
+   * LOAD DATA
+   */
+  const loadNotes = async () => {
     try {
-      const response = await fetch(
-        "/api/private-note/login",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            slug,
-            password,
-          }),
-        }
-      );
+      setMessage("Loading...");
 
-      const result = await response.json();
+      const response = await fetch("/api/private-note/reload", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          slug,
+        }),
+      });
 
-      if (!response.ok || !result.success) {
-        setLoginMessage(
-          result.message || "Incorrect password."
-        );
-        return;
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || "Failed to load notes.");
       }
 
-      setUnlocked(true);
-      setLoginMessage("");
+      if (data.notes && data.notes.length > 0) {
+        setNotes(data.notes);
+        setActiveTab(0);
+      } else {
+        setNotes([
+          {
+            id: "",
+            title: "Note 1",
+            content: "",
+            tab_order: 0,
+          },
+        ]);
+      }
+
+      setMessage("Loaded");
     } catch (error) {
       console.error(error);
-
-      setLoginMessage(
-        "Unable to connect to the server."
-      );
-    } finally {
-      setLoading(false);
+      setMessage("Failed to load");
     }
   };
 
-  /* =========================
-     ACTIVE NOTE
-  ========================= */
+  /*
+   * LOAD WHEN PAGE OPENS
+   */
+  useEffect(() => {
+    loadNotes();
+  }, [slug]);
 
-  const activeNote =
-    tabs.find((tab) => tab.id === activeTab) ||
-    tabs[0];
+  /*
+   * SAVE ACTIVE NOTE
+   */
+  const saveNote = async () => {
+    const note = notes[activeTab];
 
-  /* =========================
-     CONTENT
-  ========================= */
+    if (!note) return;
 
-  const handleContentChange = (
-    value: string
-  ) => {
-    setTabs((currentTabs) =>
-      currentTabs.map((tab) =>
-        tab.id === activeTab
+    try {
+      setSaving(true);
+      setMessage("Saving...");
+
+      const response = await fetch("/api/private-note/save", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          slug,
+          noteId: note.id,
+          title: note.title,
+          content: note.content,
+          tabOrder: activeTab,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || "Failed to save.");
+      }
+
+      /*
+       * Jika note baru dibuat,
+       * database memberikan ID baru.
+       */
+      if (data.note) {
+        setNotes((current) =>
+          current.map((item, index) =>
+            index === activeTab
+              ? {
+                  ...item,
+                  id: data.note.id,
+                  title: data.note.title,
+                  content: data.note.content,
+                  tab_order: data.note.tab_order,
+                }
+              : item
+          )
+        );
+      }
+
+      setMessage("Saved!");
+    } catch (error) {
+      console.error(error);
+      setMessage("Save failed");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  /*
+   * UPDATE TEXT
+   */
+  const updateContent = (value: string) => {
+    setNotes((current) =>
+      current.map((note, index) =>
+        index === activeTab
           ? {
-              ...tab,
+              ...note,
               content: value,
             }
-          : tab
+          : note
       )
     );
 
-    setSaved(false);
+    setMessage("Unsaved changes");
   };
 
-  /* =========================
-     ADD TAB
-  ========================= */
-
+  /*
+   * ADD NEW TAB
+   */
   const addTab = () => {
-    const newTab: NoteTab = {
-      id: nextTabId,
-      title: `Note ${nextTabId}`,
+    const newNote: Note = {
+      id: "",
+      title: `Note ${notes.length + 1}`,
       content: "",
+      tab_order: notes.length,
     };
 
-    setTabs((currentTabs) => [
-      ...currentTabs,
-      newTab,
-    ]);
-
-    setActiveTab(nextTabId);
-    setNextTabId((current) => current + 1);
-    setSaved(false);
+    setNotes((current) => [...current, newNote]);
+    setActiveTab(notes.length);
+    setMessage("Unsaved changes");
   };
 
-  /* =========================
-     DELETE TAB
-  ========================= */
-
-  const deleteTab = (id: number) => {
-    if (tabs.length === 1) {
+  /*
+   * REMOVE TAB
+   */
+  const removeTab = (index: number) => {
+    if (notes.length === 1) {
       return;
     }
 
-    const index = tabs.findIndex(
-      (tab) => tab.id === id
+    const newNotes = notes.filter((_, i) => i !== index);
+
+    setNotes(
+      newNotes.map((note, i) => ({
+        ...note,
+        tab_order: i,
+      }))
     );
 
-    const remainingTabs = tabs.filter(
-      (tab) => tab.id !== id
-    );
-
-    setTabs(remainingTabs);
-
-    if (activeTab === id) {
-      const nextTab =
-        remainingTabs[index] ||
-        remainingTabs[remainingTabs.length - 1];
-
-      setActiveTab(nextTab.id);
+    if (activeTab >= newNotes.length) {
+      setActiveTab(newNotes.length - 1);
+    } else if (index < activeTab) {
+      setActiveTab(activeTab - 1);
     }
 
-    setSaved(false);
+    setMessage("Unsaved changes");
   };
 
-  /* =========================
-     RENAME TAB
-  ========================= */
+  /*
+   * RENAME TAB
+   */
+  const renameTab = (index: number) => {
+    const currentTitle = notes[index]?.title || "";
 
-  const renameTab = (
-    id: number,
-    title: string
-  ) => {
-    const cleanTitle = title.trim();
+    const newTitle = window.prompt(
+      "Enter tab name:",
+      currentTitle
+    );
 
-    if (!cleanTitle) {
-      setEditingTabId(null);
-      return;
-    }
+    if (newTitle === null) return;
 
-    setTabs((currentTabs) =>
-      currentTabs.map((tab) =>
-        tab.id === id
+    const cleanTitle = newTitle.trim();
+
+    if (!cleanTitle) return;
+
+    setNotes((current) =>
+      current.map((note, i) =>
+        i === index
           ? {
-              ...tab,
+              ...note,
               title: cleanTitle,
             }
-          : tab
+          : note
       )
     );
 
-    setEditingTabId(null);
-    setSaved(false);
+    setMessage("Unsaved changes");
   };
 
-  /* =========================
-     SAVE
-  ========================= */
-
-  const handleSave = () => {
-    /*
-      DATABASE SAVE AKAN DISAMBUNGKAN
-      PADA TAHAP BERIKUTNYA.
-    */
-
-    setSaved(true);
-  };
-
-  /* =========================
-     RELOAD
-  ========================= */
-
-  const handleReload = () => {
-    /*
-      DATABASE RELOAD AKAN DISAMBUNGKAN
-      PADA TAHAP BERIKUTNYA.
-    */
-
-    setSaved(true);
-  };
-
-  /* =========================
-     DELETE WORKSPACE
-  ========================= */
-
-  const handleDelete = () => {
-    const confirmed = window.confirm(
-      "Are you sure you want to permanently delete this Private Note?"
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
-    /*
-      DELETE DATABASE AKAN DISAMBUNGKAN
-      PADA TAHAP BERIKUTNYA.
-    */
-
-    window.alert(
-      "Delete function will be connected to the database next."
-    );
-  };
-
-  /* =========================
-     CHANGE PASSWORD
-  ========================= */
-
-  const handleChangePassword = () => {
-    /*
-      CHANGE PASSWORD AKAN DISAMBUNGKAN
-      PADA TAHAP BERIKUTNYA.
-    */
-
-    window.alert(
-      "Change password function will be connected next."
-    );
-  };
-
-  /* =====================================================
-     PASSWORD SCREEN
-  ===================================================== */
-
-  if (!unlocked) {
-    return (
-      <main className="private-login">
-        <div className="private-login-box">
-
-          <div className="private-login-header">
-            <div className="private-logo">
-              WHOLEGACY
-            </div>
-
-            <div className="private-login-subtitle">
-              Private Note
-            </div>
-          </div>
-
-          <div className="private-login-body">
-
-            <div className="private-login-title">
-              Private Note
-            </div>
-
-            <div className="private-login-path">
-              /{slug}
-            </div>
-
-            <label
-              htmlFor="private-password"
-              className="private-login-label"
-            >
-              Password
-            </label>
-
-            <input
-              id="private-password"
-              type="password"
-              value={password}
-              onChange={(event) => {
-                setPassword(event.target.value);
-                setLoginMessage("");
-              }}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  handleLogin();
-                }
-              }}
-              autoFocus
-              autoComplete="current-password"
-              placeholder="Enter password"
-              disabled={loading}
-              className="private-password-input"
-            />
-
-            <button
-              type="button"
-              onClick={handleLogin}
-              disabled={loading}
-              className="private-login-button"
-            >
-              {loading
-                ? "Unlocking..."
-                : "Unlock"}
-            </button>
-
-            {loginMessage && (
-              <div className="private-login-error">
-                {loginMessage}
-              </div>
-            )}
-
-            <div className="private-login-note">
-              This Private Note is password protected.
-            </div>
-
-          </div>
-        </div>
-      </main>
-    );
-  }
-
-  /* =====================================================
-     PRIVATE NOTE WORKSPACE
-  ===================================================== */
+  const activeNote = notes[activeTab];
 
   return (
-    <main className="private-workspace">
+    <main className="private-note-app">
+      {/* HEADER */}
 
-      {/* =========================
-          TOP MENU
-      ========================= */}
-
-      <header className="private-menubar">
-
-        <div className="private-brand">
+      <header className="private-note-header">
+        <div className="private-note-brand">
           WHOLEGACY
         </div>
 
-        <div className="private-toolbar">
-
+        <div className="private-note-actions">
           <button
             type="button"
-            onClick={handleDelete}
-            className="private-button"
+            onClick={saveNote}
+            disabled={saving}
           >
-            Delete
+            {saving ? "Saving..." : "Save"}
           </button>
 
           <button
             type="button"
-            onClick={handleChangePassword}
-            className="private-button"
+            onClick={loadNotes}
+          >
+            Reload
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              alert("Change password will be added next.");
+            }}
           >
             Change password
           </button>
 
           <button
             type="button"
-            onClick={handleSave}
-            className="private-button"
+            onClick={() => {
+              alert("Delete will be added next.");
+            }}
           >
-            Save
+            Delete
           </button>
-
-          <button
-            type="button"
-            onClick={handleReload}
-            className="private-button"
-          >
-            Reload
-          </button>
-
         </div>
       </header>
 
-      {/* =========================
-          PATH / STATUS
-      ========================= */}
+      {/* URL BAR */}
 
-      <div className="private-pathbar">
-
+      <div className="private-note-info">
         <span>
           wholegacy.com/p/{slug}
         </span>
 
-        <span
-          className={
-            saved
-              ? "private-status saved"
-              : "private-status"
-          }
-        >
-          {saved
-            ? "Saved"
-            : "Unsaved changes"}
+        <span>
+          {message}
         </span>
-
       </div>
 
-      {/* =========================
-          TABS
-      ========================= */}
+      {/* TABS */}
 
-      <div className="private-tabs-wrapper">
-
+      <div className="private-note-tabs">
         <button
           type="button"
+          className="private-note-add-tab"
           onClick={addTab}
           title="New tab"
-          className="private-add-tab"
         >
           +
         </button>
 
-        <div className="private-tabs">
+        {notes.map((note, index) => (
+          <div
+            key={note.id || `new-${index}`}
+            className={
+              index === activeTab
+                ? "private-note-tab active"
+                : "private-note-tab"
+            }
+          >
+            <button
+              type="button"
+              className="private-note-tab-title"
+              onClick={() => setActiveTab(index)}
+              onDoubleClick={() => renameTab(index)}
+              title="Double-click to rename"
+            >
+              {note.title}
+            </button>
 
-          {tabs.map((tab) => {
-            const isActive =
-              tab.id === activeTab;
-
-            return (
-              <div
-                key={tab.id}
-                className={
-                  isActive
-                    ? "private-tab active"
-                    : "private-tab"
-                }
+            {notes.length > 1 && (
+              <button
+                type="button"
+                className="private-note-tab-close"
+                onClick={() => removeTab(index)}
+                title="Remove tab"
               >
-
-                {editingTabId === tab.id ? (
-                  <input
-                    autoFocus
-                    defaultValue={tab.title}
-                    className="private-tab-input"
-                    onBlur={(event) =>
-                      renameTab(
-                        tab.id,
-                        event.target.value
-                      )
-                    }
-                    onKeyDown={(event) => {
-
-                      if (
-                        event.key ===
-                        "Enter"
-                      ) {
-                        renameTab(
-                          tab.id,
-                          event.currentTarget.value
-                        );
-                      }
-
-                      if (
-                        event.key ===
-                        "Escape"
-                      ) {
-                        setEditingTabId(null);
-                      }
-
-                    }}
-                  />
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setActiveTab(tab.id)
-                    }
-                    onDoubleClick={() =>
-                      setEditingTabId(tab.id)
-                    }
-                    className="private-tab-title"
-                    title="Double-click to rename"
-                  >
-                    {tab.title}
-                  </button>
-                )}
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    deleteTab(tab.id)
-                  }
-                  className="private-tab-close"
-                  title="Remove tab"
-                >
-                  ×
-                </button>
-
-              </div>
-            );
-          })}
-
-        </div>
+                ×
+              </button>
+            )}
+          </div>
+        ))}
       </div>
 
-      {/* =========================
-          EDITOR
-      ========================= */}
+      {/* EDITOR */}
 
-      <section className="private-editor">
-
+      <section className="private-note-editor">
         <textarea
-          value={activeNote.content}
-          onChange={(event) =>
-            handleContentChange(
-              event.target.value
-            )
-          }
+          value={activeNote?.content || ""}
+          onChange={(e) => updateContent(e.target.value)}
           placeholder="your text goes here..."
           spellCheck={false}
-          className="private-textarea"
         />
-
       </section>
 
-      {/* =========================
-          FOOTER
-      ========================= */}
+      {/* FOOTER */}
 
-      <footer className="private-footer">
-
+      <footer className="private-note-footer">
         <span>
           WHOLEGACY Private Note
         </span>
 
         <span>
-          {saved
-            ? "Saved"
-            : "Unsaved changes"}
+          {message}
         </span>
-
       </footer>
-
     </main>
   );
 }
