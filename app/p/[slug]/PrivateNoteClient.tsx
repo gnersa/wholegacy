@@ -27,9 +27,6 @@ export default function PrivateNoteClient({ slug }: Props) {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("Ready");
 
-  /*
-   * LOAD DATA
-   */
   const loadNotes = async () => {
     try {
       setMessage("Loading...");
@@ -39,9 +36,7 @@ export default function PrivateNoteClient({ slug }: Props) {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          slug,
-        }),
+        body: JSON.stringify({ slug }),
       });
 
       const data = await response.json();
@@ -65,23 +60,17 @@ export default function PrivateNoteClient({ slug }: Props) {
         setActiveTab(0);
       }
 
-      setMessage("Loaded");
+      setMessage("Saved");
     } catch (error) {
       console.error("LOAD NOTES ERROR:", error);
-      setMessage("Failed to load");
+      setMessage("Unable to load");
     }
   };
 
-  /*
-   * LOAD WHEN PAGE OPENS
-   */
   useEffect(() => {
     loadNotes();
   }, [slug]);
 
-  /*
-   * SAVE ACTIVE NOTE
-   */
   const saveNote = async () => {
     const note = notes[activeTab];
 
@@ -111,10 +100,6 @@ export default function PrivateNoteClient({ slug }: Props) {
         throw new Error(data.message || "Failed to save.");
       }
 
-      /*
-       * Jika note baru dibuat,
-       * database memberikan ID baru.
-       */
       if (data.note) {
         setNotes((current) =>
           current.map((item, index) =>
@@ -131,7 +116,7 @@ export default function PrivateNoteClient({ slug }: Props) {
         );
       }
 
-      setMessage("Saved!");
+      setMessage("Saved");
     } catch (error) {
       console.error("SAVE NOTE ERROR:", error);
       setMessage("Save failed");
@@ -140,9 +125,6 @@ export default function PrivateNoteClient({ slug }: Props) {
     }
   };
 
-  /*
-   * UPDATE TEXT
-   */
   const updateContent = (value: string) => {
     setNotes((current) =>
       current.map((note, index) =>
@@ -158,9 +140,6 @@ export default function PrivateNoteClient({ slug }: Props) {
     setMessage("Unsaved changes");
   };
 
-  /*
-   * ADD NEW TAB
-   */
   const addTab = () => {
     const newNote: Note = {
       id: "",
@@ -174,13 +153,8 @@ export default function PrivateNoteClient({ slug }: Props) {
     setMessage("Unsaved changes");
   };
 
-  /*
-   * REMOVE TAB
-   */
   const removeTab = (index: number) => {
-    if (notes.length === 1) {
-      return;
-    }
+    if (notes.length === 1) return;
 
     const newNotes = notes.filter((_, i) => i !== index);
 
@@ -200,14 +174,11 @@ export default function PrivateNoteClient({ slug }: Props) {
     setMessage("Unsaved changes");
   };
 
-  /*
-   * RENAME TAB
-   */
   const renameTab = (index: number) => {
     const currentTitle = notes[index]?.title || "";
 
     const newTitle = window.prompt(
-      "Enter tab name:",
+      "Rename note",
       currentTitle
     );
 
@@ -234,135 +205,219 @@ export default function PrivateNoteClient({ slug }: Props) {
   const activeNote = notes[activeTab];
 
   return (
-    <main className="private-note-app">
+    <main className="wl-note-app">
 
-      {/* HEADER */}
+      {/* TOP NAVIGATION */}
 
-      <header className="private-note-header">
-        <div className="private-note-brand">
-          WHOLEGACY
+      <header className="wl-note-nav">
+
+        <div className="wl-note-logo">
+          <span className="wl-note-logo-mark">W</span>
+          <span>WHOLEGACY</span>
         </div>
 
-        <div className="private-note-actions">
+        <div className="wl-note-nav-right">
+
+          <div className="wl-note-status">
+            <span className="wl-status-dot" />
+            Private workspace
+          </div>
 
           <button
             type="button"
+            className="wl-button wl-button-secondary"
+            onClick={loadNotes}
+          >
+            ↻ Reload
+          </button>
+
+          <button
+            type="button"
+            className="wl-button wl-button-primary"
             onClick={saveNote}
             disabled={saving}
           >
             {saving ? "Saving..." : "Save"}
           </button>
 
-          <button
-            type="button"
-            onClick={loadNotes}
-          >
-            Reload
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              alert("Change password will be added next.");
-            }}
-          >
-            Change password
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              alert("Delete will be added next.");
-            }}
-          >
-            Delete
-          </button>
-
         </div>
+
       </header>
 
-      {/* URL BAR */}
 
-      <div className="private-note-info">
-        <span>
-          wholegacy.com/p/{slug}
-        </span>
+      {/* WORKSPACE */}
 
-        <span>
-          {message}
-        </span>
-      </div>
+      <section className="wl-note-workspace">
 
-      {/* TABS */}
+        {/* WORKSPACE HEADER */}
 
-      <div className="private-note-tabs">
+        <div className="wl-note-workspace-header">
 
-        <button
-          type="button"
-          className="private-note-add-tab"
-          onClick={addTab}
-          title="New tab"
-        >
-          +
-        </button>
+          <div>
+            <div className="wl-note-eyebrow">
+              PRIVATE NOTE
+            </div>
 
-        {notes.map((note, index) => (
-          <div
-            key={note.id || `new-${index}`}
-            className={
-              index === activeTab
-                ? "private-note-tab active"
-                : "private-note-tab"
-            }
-          >
+            <h1>
+              Your private story
+            </h1>
+
+            <div className="wl-note-url">
+              wholegacy.com/p/{slug}
+            </div>
+          </div>
+
+          <div className="wl-note-header-actions">
 
             <button
               type="button"
-              className="private-note-tab-title"
-              onClick={() => setActiveTab(index)}
-              onDoubleClick={() => renameTab(index)}
-              title="Double-click to rename"
+              className="wl-note-text-button"
+              onClick={() =>
+                alert("Change password will be added next.")
+              }
             >
-              {note.title}
+              Change password
             </button>
 
-            {notes.length > 1 && (
-              <button
-                type="button"
-                className="private-note-tab-close"
-                onClick={() => removeTab(index)}
-                title="Remove tab"
-              >
-                ×
-              </button>
-            )}
+            <button
+              type="button"
+              className="wl-note-danger-button"
+              onClick={() =>
+                alert("Delete will be added next.")
+              }
+            >
+              Delete workspace
+            </button>
 
           </div>
-        ))}
 
-      </div>
+        </div>
 
-      {/* EDITOR */}
 
-      <section className="private-note-editor">
-        <textarea
-          value={activeNote?.content || ""}
-          onChange={(e) => updateContent(e.target.value)}
-          placeholder="your text goes here..."
-          spellCheck={false}
-        />
+        {/* EDITOR CARD */}
+
+        <div className="wl-note-card">
+
+          {/* TABS */}
+
+          <div className="wl-note-tabs-bar">
+
+            <div className="wl-note-tabs">
+
+              {notes.map((note, index) => (
+
+                <div
+                  key={note.id || `new-${index}`}
+                  className={
+                    index === activeTab
+                      ? "wl-note-tab active"
+                      : "wl-note-tab"
+                  }
+                >
+
+                  <button
+                    type="button"
+                    className="wl-note-tab-title"
+                    onClick={() => setActiveTab(index)}
+                    onDoubleClick={() => renameTab(index)}
+                    title="Double-click to rename"
+                  >
+                    {note.title}
+                  </button>
+
+                  {notes.length > 1 && (
+                    <button
+                      type="button"
+                      className="wl-note-tab-close"
+                      onClick={() => removeTab(index)}
+                      title="Remove note"
+                    >
+                      ×
+                    </button>
+                  )}
+
+                </div>
+
+              ))}
+
+              <button
+                type="button"
+                className="wl-note-new-tab"
+                onClick={addTab}
+                title="New note"
+              >
+                +
+              </button>
+
+            </div>
+
+          </div>
+
+
+          {/* EDITOR */}
+
+          <div className="wl-note-editor">
+
+            <textarea
+              value={activeNote?.content || ""}
+              onChange={(e) =>
+                updateContent(e.target.value)
+              }
+              placeholder="Start writing your story..."
+              spellCheck={false}
+            />
+
+          </div>
+
+
+          {/* EDITOR FOOTER */}
+
+          <div className="wl-note-editor-footer">
+
+            <span>
+              {activeNote?.content?.length || 0} characters
+            </span>
+
+            <span className="wl-note-save-status">
+              {message}
+            </span>
+
+          </div>
+
+        </div>
+
+
+        {/* BOTTOM INFO */}
+
+        <div className="wl-note-bottom">
+
+          <div>
+            <strong>Your legacy, your control.</strong>
+            <span>
+              {" "}Everything you write here belongs to your private workspace.
+            </span>
+          </div>
+
+          <div className="wl-note-secure">
+            <span className="wl-status-dot" />
+            Private
+          </div>
+
+        </div>
+
       </section>
+
 
       {/* FOOTER */}
 
-      <footer className="private-note-footer">
+      <footer className="wl-note-footer">
 
         <span>
-          WHOLEGACY Private Note
+          © WHOLEGACY
         </span>
 
         <span>
-          {message}
+          Private Note
         </span>
 
       </footer>
