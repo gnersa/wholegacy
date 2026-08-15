@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://wholegacy.com"),
+  metadataBase: new URL("https://www.wholegacy.com"),
 
   title: {
     default: "WHOLEGACY | Your Story. Your Identity. Your Legacy.",
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
   authors: [
     {
       name: "WHOLEGACY",
-      url: "https://wholegacy.com",
+      url: "https://www.wholegacy.com",
     },
   ],
 
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
   publisher: "WHOLEGACY",
 
   alternates: {
-    canonical: "https://wholegacy.com",
+    canonical: "https://www.wholegacy.com",
   },
 
   robots: {
@@ -78,7 +78,7 @@ export const metadata: Metadata = {
     title: "WHOLEGACY | Your Story. Your Identity. Your Legacy.",
     description:
       "Preserve your stories, memories, values, documents, and wishes for the people who matter most.",
-    url: "https://wholegacy.com",
+    url: "https://www.wholegacy.com",
     siteName: "WHOLEGACY",
     images: [
       {
