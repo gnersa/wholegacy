@@ -32,7 +32,7 @@ const [notes, setNotes] = useState<Note[]>([
 
   content: "",
 
-  tab\_order: 0,
+  tab_order: 0,
 
 },
 
@@ -109,7 +109,7 @@ try {
 
         content: "",
 
-        tab\_order: 0,
+        tab_order: 0,
 
       },
 
@@ -235,7 +235,7 @@ try {
 
               content: data.note.content,
 
-              tab\_order: data.note.tab\_order,
+              tab_order: data.note.tab_order,
 
             }
 
@@ -317,7 +317,7 @@ const newNote: Note = {
 
   content: "",
 
-  tab\_order: notes.length,
+  tab_order: notes.length,
 
 };
 
@@ -348,7 +348,7 @@ if (notes.length === 1) {
 
 
 
-const newNotes = notes.filter((\_, i) => i !== index);
+const newNotes = notes.filter((_, i) => i !== index);
 
 
 
@@ -358,7 +358,7 @@ setNotes(
 
     ...note,
 
-    tab\_order: i,
+    tab_order: i,
 
   }))
 
@@ -395,7 +395,7 @@ const currentTitle = notes[index]?.title || "";
 
 
 
-const newTitle = window\.prompt(
+const newTitle = window.prompt(
 
   "Enter tab name:",
 
