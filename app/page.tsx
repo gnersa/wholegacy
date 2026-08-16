@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-const SITE_URL = "https://wholelegacy.com";
+const SITE_URL = "https://wholegacy.com";
 
 const ENTITY_DESCRIPTION =
   "WHOLEGACY is a private digital legacy platform for preserving important documents, memories, stories, values, messages, and wishes for yourself and future generations.";
