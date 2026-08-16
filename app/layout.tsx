@@ -58,6 +58,10 @@ export const metadata: Metadata = {
 
   applicationName: "WHOLEGACY",
 
+    verification: {
+    google: "CFU6X6vG1VVtWzdmvc8xpXBnVL7an7YLI630RvCfd5Q",
+  },
+
   keywords: [
     "private digital legacy",
     "digital legacy",
