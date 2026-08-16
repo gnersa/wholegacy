@@ -3,7 +3,7 @@ import "./globals.css";
 
 const SITE_URL = "https://wholegacy.com";
 
-const wholeLegacyJsonLd = {
+const whoLegacyJsonLd = {
   "@context": "https://schema.org",
   "@graph": [
     {
@@ -143,7 +143,7 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify(wholeLegacyJsonLd),
+            __html: JSON.stringify(whoLegacyJsonLd),
           }}
         />
         {children}
