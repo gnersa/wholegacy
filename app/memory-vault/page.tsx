@@ -10,27 +10,71 @@ type GeoContent = {
   sections: GeoSection[];
 };
 
-const content: GeoContent = {"title": "Private Digital Memory Vault", "description": "Preserve photos, stories, videos, and meaningful memories in a private digital memory vault with WHOLEGACY.", "h1": "Your Private Digital Memory Vault", "intro": "A digital memory vault is a private online space for preserving photos, stories, videos, notes, and meaningful moments. WHOLEGACY brings these memories together as part of your personal legacy.", "sections": [["Preserve meaningful moments", "Keep the memories that matter to you in one private place instead of scattering them across devices and unrelated services."], ["Give memories context", "Add stories, notes, people, places, and personal meaning around the memories you preserve."], ["Built for the long view", "Your memories can become part of a family archive and a legacy that future generations can discover and understand."]]};
+const SITE_URL = "https://wholegacy.com";
+
+const content: GeoContent = {
+  title: "Private Digital Memory Vault",
+  description:
+    "Preserve photos, stories, videos, and meaningful memories in a private digital memory vault with WHOLEGACY.",
+  h1: "Your Private Digital Memory Vault",
+  intro:
+    "A digital memory vault is a private online space for preserving photos, stories, videos, notes, and meaningful moments. WHOLEGACY brings these memories together as part of your personal legacy.",
+  sections: [
+    [
+      "Preserve meaningful moments",
+      "Keep the memories that matter to you in one private place instead of scattering them across devices and unrelated services.",
+    ],
+    [
+      "Give memories context",
+      "Add stories, notes, people, places, and personal meaning around the memories you preserve.",
+    ],
+    [
+      "Built for the long view",
+      "Your memories can become part of a family archive and a legacy that future generations can discover and understand.",
+    ],
+  ],
+};
 
 export const metadata: Metadata = {
   title: content.title,
   description: content.description,
   alternates: {
-    canonical: `https://wholelegacy.com/memory-vault`,
+    canonical: `${SITE_URL}/memory-vault`,
+  },
+  openGraph: {
+    title: content.title,
+    description: content.description,
+    url: `${SITE_URL}/memory-vault`,
+    siteName: "WHOLEGACY",
+    type: "article",
+    images: [
+      {
+        url: "/og/og_memory_vault.jpg",
+        width: 1200,
+        height: 630,
+        alt: content.title,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: content.title,
+    description: content.description,
+    images: ["/og/og_memory_vault.jpg"],
   },
 };
 
 const jsonLd = {
   "@context": "https://schema.org",
   "@type": "WebPage",
-  "name": content.title,
-  "description": content.description,
-  "url": `https://wholelegacy.com/memory-vault`,
-  "isPartOf": {
+  name: content.title,
+  description: content.description,
+  url: `${SITE_URL}/memory-vault`,
+  isPartOf: {
     "@type": "WebSite",
-    "name": "WHOLEGACY",
-    "url": "https://wholelegacy.com"
-  }
+    name: "WHOLEGACY",
+    url: SITE_URL,
+  },
 };
 
 export default function Page() {
