@@ -24,6 +24,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ["/p/", "/private-note/"],
       },
     ],
-    sitemap: "https://wholelegacy.com/sitemap.xml",
+    sitemap: "https://wholegacy.com/sitemap.xml",
   };
 }
