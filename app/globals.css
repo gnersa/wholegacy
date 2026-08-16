@@ -1270,8 +1270,8 @@ h2 { font-size: clamp(38px, 4vw, 54px); line-height: 1.08; margin: 0 0 20px; let
 .wl-home {
   --wl-black: #171717;
   --wl-dark: #202020;
-  --wl-blue: #6d5dfc;
-  --wl-blue-soft: #eeeaff;
+  --wl-blue: #7d6229;
+  --wl-blue-soft: #f3eadb;
   --wl-gold: #b88b46;
   --wl-text: #1d1d1f;
   --wl-muted: #747474;
