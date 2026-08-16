@@ -829,7 +829,7 @@ export default function HomePage() {
               className="wl-brand footer-brand"
             >
               <span className="wl-brand-mark">
-                W
+                <img src="/logo-header.png" alt="WHOLEGACY" className="wl-brand-img" />
               </span>
 
               <span>WHOLEGACY</span>
