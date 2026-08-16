@@ -35,48 +35,42 @@ const steps = [
   ["04", "Peace of mind", "Your legacy is protected — for you and your loved ones."],
 ];
 
-const legacyPaths = [
+const legacyPages = [
   {
     icon: "∞",
     title: "Digital Legacy",
     text: "Preserve the stories, values, experiences, and information that define your life.",
     href: "/digital-legacy",
-    cta: "Explore Digital Legacy",
   },
   {
     icon: "♧",
     title: "Private Documents",
     text: "Keep important personal and family documents organized in one private digital space.",
-    href: "/private-document-storage",
-    cta: "Explore Private Documents",
+    href: "/private-documents-and-memories",
   },
   {
     icon: "♡",
     title: "Memory Vault",
-    text: "Preserve photos, memories, stories, and meaningful moments in your private digital memory vault.",
+    text: "Preserve photos, memories, stories, and meaningful moments in your private digital archive.",
     href: "/memory-vault",
-    cta: "Explore Memory Vault",
   },
   {
     icon: "⌂",
     title: "Family Archive",
-    text: "Build a private family archive for preserving family stories, history, documents, and memories.",
+    text: "Build a private family archive for stories, history, documents, photographs, and memories.",
     href: "/family-archive",
-    cta: "Explore Family Archive",
   },
   {
     icon: "▱",
     title: "Life Story",
     text: "Preserve the experiences, milestones, and stories that shaped who you are.",
     href: "/life-story",
-    cta: "Preserve Your Life Story",
   },
   {
     icon: "◇",
     title: "Digital Inheritance",
-    text: "Prepare meaningful information, messages, and digital assets that can be passed on to people you trust.",
+    text: "Prepare meaningful information, messages, wishes, and digital assets for people you trust.",
     href: "/digital-inheritance",
-    cta: "Explore Digital Inheritance",
   },
 ];
 
@@ -86,24 +80,20 @@ const faqs = [
     a: "WHOLEGACY is a private digital legacy platform for preserving important documents, memories, stories, values, messages, and wishes for yourself and future generations.",
   },
   {
-    q: "Why do I need a digital legacy?",
-    a: "Important parts of our lives are often scattered across devices, cloud storage, and different services. WHOLEGACY helps you intentionally organize and preserve the documents, memories, stories, and values that matter to you.",
-  },
-  {
-    q: "What can I store in WHOLEGACY?",
-    a: "You can preserve private documents, family records, photos, memories, life stories, personal messages, important information, values, wishes, and other meaningful content as part of your digital legacy.",
-  },
-  {
     q: "Where can I store private documents and memories online?",
-    a: "WHOLEGACY provides a private digital space specifically designed for preserving important documents, personal memories, family stories, photos, and other meaningful information together as part of your digital legacy.",
+    a: "WHOLEGACY provides a private digital space for preserving important documents, personal memories, family stories, photos, and other meaningful information together as part of your digital legacy.",
   },
   {
     q: "What is a digital memory vault?",
-    a: "A digital memory vault is a private online space for preserving meaningful memories, photos, stories, videos, personal notes, and important documents. WHOLEGACY brings these memories and personal records together as part of your digital legacy.",
+    a: "A digital memory vault is a private online space for preserving meaningful memories, photos, stories, videos, personal notes, and important documents.",
   },
   {
     q: "Can WHOLEGACY be used as a private family archive?",
     a: "Yes. WHOLEGACY can be used as a private family digital archive for preserving family documents, memories, stories, photographs, important information, and personal history for future generations.",
+  },
+  {
+    q: "What can I store in WHOLEGACY?",
+    a: "You can preserve private documents, family records, photos, memories, life stories, personal messages, important information, values, wishes, and other meaningful content.",
   },
   {
     q: "Are my Private Notes secure?",
@@ -112,6 +102,24 @@ const faqs = [
 ];
 
 export default function Home() {
+  const websiteJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "WHOLEGACY",
+    url: "https://wholelegacy.com",
+    description:
+      "WHOLEGACY is a private digital legacy platform for preserving documents, memories, stories, values, and wishes.",
+  };
+
+  const organizationJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: "WHOLEGACY",
+    url: "https://wholelegacy.com",
+    description:
+      "A private digital legacy platform for preserving documents, memories, stories, values, and wishes.",
+  };
+
   const faqJsonLd = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -125,24 +133,23 @@ export default function Home() {
     })),
   };
 
-  const websiteJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "WebSite",
-    name: "WHOLEGACY",
-    url: "https://wholelegacy.com",
-    description:
-      "WHOLEGACY is a private digital legacy platform for preserving documents, memories, stories, values, and wishes.",
-  };
-
   return (
     <main>
       {/* =========================
-          STRUCTURED DATA
+          GEO / STRUCTURED DATA
       ========================== */}
+
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify(websiteJsonLd),
+        }}
+      />
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(organizationJsonLd),
         }}
       />
 
@@ -154,9 +161,10 @@ export default function Home() {
       />
 
       {/* =========================
-          NAVIGATION
-          EXISTING UI PRESERVED
+          NAV
+          EXISTING APPLE-STYLE
       ========================== */}
+
       <nav className="nav container">
         <a className="brand" href="/">
           <span className="brand-mark">♧</span>
@@ -180,8 +188,9 @@ export default function Home() {
 
       {/* =========================
           HERO
-          EXISTING UI PRESERVED
+          APPLE-STYLE
       ========================== */}
+
       <section id="home" className="hero">
         <div className="container hero-grid">
           <div className="hero-copy">
@@ -196,9 +205,9 @@ export default function Home() {
             </h1>
 
             <p className="hero-text">
-              WHOLEGACY is a private digital legacy platform that helps you
-              preserve your stories, memories, important documents, values,
-              and wishes for the people you love and future generations.
+              WHOLEGACY is a private digital legacy platform for preserving
+              your stories, memories, important documents, values, and wishes
+              for the people you love and future generations.
             </p>
 
             <form className="signup">
@@ -222,10 +231,10 @@ export default function Home() {
           <div className="hero-art">
             <Image
               src="/hero-mockup.png"
-              alt="WHOLEGACY private digital legacy platform for preserving memories and documents"
+              alt="WHOLEGACY private digital legacy platform"
               fill
               priority
-              sizes="(max-width: 900px) 100vw, 55vw"
+              sizes="(max-width: 950px) 100vw, 55vw"
               className="hero-image"
             />
           </div>
@@ -234,8 +243,9 @@ export default function Home() {
 
       {/* =========================
           FEATURES
-          EXISTING UI PRESERVED
+          ORIGINAL STRUCTURE
       ========================== */}
+
       <section id="features" className="section features-section">
         <div className="container">
           <div className="center-heading">
@@ -265,34 +275,48 @@ export default function Home() {
 
       {/* =========================
           EXPLORE YOUR LEGACY
-          NEW CONTENT / EXISTING UI
+          GEO HUB
+          
+          Menggunakan style feature
+          yang sudah ada sehingga UI
+          tetap konsisten.
       ========================== */}
+
       <section id="legacy" className="section">
         <div className="container">
           <div className="center-heading">
             <p className="eyebrow">EXPLORE YOUR LEGACY</p>
 
-            <h2>Everything That Matters, In One Place.</h2>
+            <h2>Everything that matters, in one place.</h2>
 
             <p>
               Explore the different ways WHOLEGACY helps you preserve your
-              documents, memories, stories, and family history for generations
-              to come.
+              documents, memories, stories, family history, and digital
+              legacy.
             </p>
           </div>
 
           <div className="features-grid">
-            {legacyPaths.map((item) => (
-              <article className="feature" key={item.href}>
-                <div className="feature-icon">{item.icon}</div>
+            {legacyPages.map((page) => (
+              <article className="feature" key={page.href}>
+                <div className="feature-icon">{page.icon}</div>
 
-                <h3>{item.title}</h3>
+                <h3>{page.title}</h3>
 
-                <p>{item.text}</p>
+                <p>{page.text}</p>
 
-                <a href={item.href}>
-                  {item.cta} <span>→</span>
-                </a>
+                <p style={{ marginTop: "18px" }}>
+                  <a
+                    href={page.href}
+                    style={{
+                      color: "var(--gold)",
+                      fontWeight: 600,
+                      fontSize: "13px",
+                    }}
+                  >
+                    Explore <span>→</span>
+                  </a>
+                </p>
               </article>
             ))}
           </div>
@@ -301,8 +325,9 @@ export default function Home() {
 
       {/* =========================
           HOW IT WORKS
-          EXISTING UI PRESERVED
+          ORIGINAL APPLE-STYLE
       ========================== */}
+
       <section id="how" className="section how-section">
         <div className="container how-grid">
           <div>
@@ -379,61 +404,169 @@ export default function Home() {
       </section>
 
       {/* =========================
-          FAQ
-          NEW GEO CONTENT
+          WHY WHOLEGACY
       ========================== */}
+
+      <section className="section">
+        <div className="container">
+          <div className="center-heading">
+            <p className="eyebrow">WHY WHOLEGACY</p>
+
+            <h2>More than cloud storage.</h2>
+
+            <p>
+              WHOLEGACY is designed specifically for your digital legacy —
+              not simply for storing files. It gives meaning and structure to
+              the information, memories, stories, and wishes you want to
+              preserve.
+            </p>
+          </div>
+
+          <div className="features-grid">
+            <article className="feature">
+              <div className="feature-icon">♙</div>
+              <h3>Private</h3>
+              <p>
+                Keep your personal legacy in a space designed around privacy
+                and control.
+              </p>
+            </article>
+
+            <article className="feature">
+              <div className="feature-icon">♡</div>
+              <h3>Meaningful</h3>
+              <p>
+                Preserve more than files by capturing the stories and memories
+                behind them.
+              </p>
+            </article>
+
+            <article className="feature">
+              <div className="feature-icon">◇</div>
+              <h3>Personal</h3>
+              <p>
+                Build a digital archive around your own life, family, values,
+                and wishes.
+              </p>
+            </article>
+
+            <article className="feature">
+              <div className="feature-icon">∞</div>
+              <h3>Future-focused</h3>
+              <p>
+                Prepare something meaningful that can remain valuable for
+                people you trust and future generations.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      {/* =========================
+          FAQ
+          GEO
+      ========================== */}
+
       <section id="faq" className="section">
         <div className="container">
           <div className="center-heading">
             <p className="eyebrow">FREQUENTLY ASKED QUESTIONS</p>
 
-            <h2>Questions About WHOLEGACY</h2>
+            <h2>Questions about WHOLEGACY</h2>
 
             <p>
               Learn more about digital legacy, private documents, memories,
-              family archives, and how WHOLEGACY helps preserve what matters.
+              family archives, and preserving what matters.
             </p>
           </div>
 
-          <div className="faq-list">
+          <div
+            style={{
+              maxWidth: "820px",
+              margin: "0 auto",
+              borderTop: "1px solid var(--line)",
+            }}
+          >
             {faqs.map((faq) => (
-              <details className="faq-item" key={faq.q}>
-                <summary>{faq.q}</summary>
+              <details
+                key={faq.q}
+                style={{
+                  padding: "22px 0",
+                  borderBottom: "1px solid var(--line)",
+                }}
+              >
+                <summary
+                  style={{
+                    cursor: "pointer",
+                    fontWeight: 600,
+                    fontSize: "15px",
+                    color: "var(--navy)",
+                  }}
+                >
+                  {faq.q}
+                </summary>
 
-                <p>{faq.a}</p>
+                <p
+                  style={{
+                    margin: "14px 0 0",
+                    color: "var(--muted)",
+                    fontSize: "14px",
+                    lineHeight: 1.7,
+                    maxWidth: "700px",
+                  }}
+                >
+                  {faq.a}
+                </p>
               </details>
             ))}
           </div>
 
-          <div className="center-heading">
-            <p>
-              <a href="/faq">
-                View all frequently asked questions <span>→</span>
-              </a>
-            </p>
+          <div
+            style={{
+              textAlign: "center",
+              marginTop: "35px",
+            }}
+          >
+            <a
+              href="/faq"
+              style={{
+                color: "var(--gold)",
+                fontWeight: 600,
+                fontSize: "14px",
+              }}
+            >
+              View all frequently asked questions <span>→</span>
+            </a>
           </div>
         </div>
       </section>
 
       {/* =========================
           PRIVATE DOCUMENTS CTA
-          DIRECT SEARCH / GEO INTENT
       ========================== */}
+
       <section className="section">
         <div className="container">
           <div className="center-heading">
             <p className="eyebrow">PRIVATE DOCUMENTS &amp; MEMORIES</p>
 
-            <h2>Preserve What Matters Most.</h2>
+            <h2>Preserve what matters most.</h2>
 
             <p>
-              Looking for a private place to keep your important documents,
+              Looking for a private place to keep important documents,
               memories, family stories, and personal information? WHOLEGACY
               brings them together as part of your digital legacy.
             </p>
 
-            <p>
-              <a href="/private-documents-and-memories">
+            <p style={{ marginTop: "25px" }}>
+              <a
+                href="/private-documents-and-memories"
+                style={{
+                  color: "var(--gold)",
+                  fontWeight: 600,
+                  fontSize: "14px",
+                }}
+              >
                 Explore Private Documents &amp; Memories <span>→</span>
               </a>
             </p>
@@ -443,8 +576,9 @@ export default function Home() {
 
       {/* =========================
           NOTIFY
-          EXISTING UI PRESERVED
+          ORIGINAL APPLE-STYLE
       ========================== */}
+
       <section id="notify" className="notify-section">
         <div className="container notify-inner">
           <div>
@@ -472,8 +606,9 @@ export default function Home() {
 
       {/* =========================
           FOOTER
-          EXISTING UI + INTERNAL LINKS
+          APPLE-STYLE
       ========================== */}
+
       <footer id="contact" className="footer">
         <div className="container footer-grid">
           <div>
@@ -488,9 +623,9 @@ export default function Home() {
 
             <a href="/about">About</a>
 
-            <a href="#contact">Contact</a>
+            <a href="/security">Security</a>
 
-            <a href="/security">Security &amp; Privacy</a>
+            <a href="#contact">Contact</a>
           </div>
 
           <div>
@@ -498,7 +633,7 @@ export default function Home() {
 
             <a href="/digital-legacy">Digital Legacy</a>
 
-            <a href="/private-document-storage">
+            <a href="/private-documents-and-memories">
               Private Documents
             </a>
 
