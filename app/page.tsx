@@ -178,7 +178,7 @@ export default function HomePage() {
       <header className="wl-nav">
         <div className="wl-nav-inner">
           <a href="/" className="wl-brand">
-            <span className="wl-brand-mark">W</span>
+            <img src="/logo-header.png" alt="WHOLEGACY" className="wl-brand-img" />
             <span>WHOLEGACY</span>
           </a>
 
