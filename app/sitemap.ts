@@ -1,26 +1,60 @@
 import type { MetadataRoute } from "next";
 
-const baseUrl = "https://wholelegacy.com";
-
-const publicRoutes = [
-  "",
-  "/digital-legacy",
-  "/private-document-storage",
-  "/memory-vault",
-  "/family-archive",
-  "/life-story",
-  "/digital-inheritance",
-  "/private-documents-and-memories",
-  "/faq",
-  "/security",
-  "/about",
-];
+const SITE_URL = "https://wholelegacy.com";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  return publicRoutes.map((route) => ({
-    url: `${baseUrl}${route}`,
+  const routes = [
+    {
+      url: "/",
+      priority: 1.0,
+    },
+    {
+      url: "/about",
+      priority: 0.7,
+    },
+    {
+      url: "/digital-legacy",
+      priority: 0.9,
+    },
+    {
+      url: "/private-document-storage",
+      priority: 0.9,
+    },
+    {
+      url: "/private-documents-and-memories",
+      priority: 0.9,
+    },
+    {
+      url: "/memory-vault",
+      priority: 0.9,
+    },
+    {
+      url: "/family-archive",
+      priority: 0.9,
+    },
+    {
+      url: "/life-story",
+      priority: 0.8,
+    },
+    {
+      url: "/digital-inheritance",
+      priority: 0.8,
+    },
+    {
+      url: "/security",
+      priority: 0.7,
+    },
+    {
+      url: "/faq",
+      priority: 0.8,
+    },
+  ];
+
+  return routes.map((route) => ({
+    url: `${SITE_URL}${route.url}`,
     lastModified: new Date(),
-    changeFrequency: route === "" ? "weekly" : "monthly",
-    priority: route === "" ? 1 : 0.8,
+    changeFrequency:
+      route.url === "/" ? "weekly" : "monthly",
+    priority: route.priority,
   }));
 }
