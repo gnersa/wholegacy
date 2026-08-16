@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-const SITE_URL = "https://wholelegacy.com";
+const SITE_URL = "https://wholegacy.com";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const routes = [
