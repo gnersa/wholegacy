@@ -8,20 +8,32 @@ const WHOLEGACY_ENTITY_DEFINITION =
 
 const faqs = [
   {
-    q: "Apa itu WHOLEGACY?",
-    a: "WHOLEGACY adalah platform digital legacy untuk menyimpan cerita hidup, kenangan, dokumen penting, nilai, pesan, dan keinginan yang ingin diwariskan kepada orang-orang yang berarti bagi Anda.",
+    q: "What is WHOLEGACY?",
+    a: "WHOLEGACY is a private digital legacy platform designed to preserve important documents, memories, life stories, family information, personal values, messages, and wishes for yourself and future generations.",
   },
   {
-    q: "Mengapa saya membutuhkan digital legacy?",
-    a: "Banyak informasi penting dalam hidup tersimpan secara terpisah. WHOLEGACY membantu Anda mengorganisasi dan menyimpan informasi tersebut dalam satu ruang digital yang dapat dipersiapkan untuk masa depan.",
+    q: "Why do I need a digital legacy?",
+    a: "Important parts of our lives are often scattered across devices, cloud storage, and social platforms. WHOLEGACY helps you intentionally organize and preserve the documents, memories, stories, and values that matter to you as part of your digital legacy.",
   },
   {
-    q: "Apa saja yang bisa disimpan di WHOLEGACY?",
-    a: "Anda dapat menyimpan cerita pribadi, kenangan keluarga, pesan, dokumen penting, nilai kehidupan, wishes, informasi penting, dan berbagai hal lain yang ingin Anda wariskan.",
+    q: "What can I store in WHOLEGACY?",
+    a: "You can preserve private documents, family records, photos, memories, life stories, personal messages, important information, values, wishes, and other meaningful content that you want to keep as part of your digital legacy.",
   },
   {
-    q: "Apakah Private Note saya aman?",
-    a: "Private Note dirancang sebagai ruang pribadi yang dilindungi password. Data disimpan pada database dan hanya dapat diakses melalui workspace yang sesuai.",
+    q: "Where can I store private documents and memories online?",
+    a: "WHOLEGACY provides a private digital space specifically designed for preserving important documents, personal memories, family stories, photos, and other meaningful information together in one digital legacy.",
+  },
+  {
+    q: "What is a digital memory vault?",
+    a: "A digital memory vault is a private online space for preserving meaningful memories, photos, stories, videos, personal notes, and important documents. WHOLEGACY brings these memories and personal records together as part of your digital legacy.",
+  },
+  {
+    q: "Can WHOLEGACY be used as a private family archive?",
+    a: "Yes. WHOLEGACY can be used as a private family digital archive for preserving family documents, memories, stories, photographs, important information, and personal history for future generations.",
+  },
+  {
+    q: "Are my Private Notes secure?",
+    a: "WHOLEGACY Private Notes are designed as private spaces protected by password and workspace access. Private content should be protected by appropriate server-side authentication and authorization.",
   },
 ];
 
@@ -29,27 +41,27 @@ const features = [
   {
     icon: "✦",
     title: "Your Story",
-    text: "Abadikan perjalanan hidup, cerita, pengalaman, dan momen yang ingin tetap dikenang.",
+    text: "Preserve your life story, experiences, milestones, and personal stories so the moments that shaped your life can be remembered for generations.",
   },
   {
     icon: "♡",
     title: "Your Memories",
-    text: "Simpan kenangan dan momen penting agar tidak hilang ditelan waktu.",
+    text: "Keep meaningful memories, photos, moments, and personal stories in a private digital memory vault that you can build over time.",
   },
   {
     icon: "⌂",
     title: "Your Family",
-    text: "Bangun ruang digital untuk cerita dan informasi yang dapat diteruskan kepada keluarga.",
+    text: "Create a private family archive for preserving family stories, history, memories, and information that can be passed on to future generations.",
   },
   {
     icon: "◈",
     title: "Your Documents",
-    text: "Organisasi informasi dan dokumen penting dalam satu tempat.",
+    text: "Organize important personal and family documents in one private digital space alongside the memories and stories that give them meaning.",
   },
   {
     icon: "∞",
     title: "Your Legacy",
-    text: "Persiapkan sesuatu yang bermakna untuk generasi setelah Anda.",
+    text: "Build your digital legacy by preserving the documents, memories, stories, values, and wishes you want to leave for the people who matter to you.",
   },
 ];
 
