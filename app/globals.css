@@ -2422,7 +2422,7 @@ h2 { font-size: clamp(38px, 4vw, 54px); line-height: 1.08; margin: 0 0 20px; let
 }
 
 .wl-button-primary {
-  background: #0071e3;
+  background: #7d6229;
   color: white;
   box-shadow: 0 5px 14px rgba(0,113,227,.18);
 }
