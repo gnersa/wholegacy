@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   title: content.title,
   description: content.description,
   alternates: {
-    canonical: `https://wholelegacy.com/about`,
+    canonical: `https://wholegacy.com/about`,
   },
 };
 
@@ -25,11 +25,11 @@ const jsonLd = {
   "@type": "WebPage",
   "name": content.title,
   "description": content.description,
-  "url": `https://wholelegacy.com/about`,
+  "url": `https://wholegacy.com/about`,
   "isPartOf": {
     "@type": "WebSite",
     "name": "WHOLEGACY",
-    "url": "https://wholelegacy.com"
+    "url": "https://wholegacy.com"
   }
 };
 
