@@ -2,8 +2,83 @@
 
 import { useState } from "react";
 
-const WHOLEGACY_ENTITY_DEFINITION =
-  "WHOLEGACY is a private digital legacy platform for preserving important documents, memories, stories, values, and wishes for yourself and future generations.";
+const SITE_URL = "https://wholelegacy.com";
+
+const ENTITY_DESCRIPTION =
+  "WHOLEGACY is a private digital legacy platform for preserving important documents, memories, stories, values, messages, and wishes for yourself and future generations.";
+
+const features = [
+  {
+    icon: "✦",
+    title: "Your Story",
+    text: "Preserve your life story, experiences, milestones, lessons, and moments that shaped who you are.",
+  },
+  {
+    icon: "♡",
+    title: "Your Memories",
+    text: "Store meaningful memories, photos, stories, letters, and moments you want to preserve for the future.",
+  },
+  {
+    icon: "⌂",
+    title: "Your Family",
+    text: "Create a private family archive for stories, history, photographs, information, and memories.",
+  },
+  {
+    icon: "◈",
+    title: "Your Documents",
+    text: "Organize important personal and family documents in one private digital space.",
+  },
+  {
+    icon: "∞",
+    title: "Your Legacy",
+    text: "Prepare something meaningful for the people you love and future generations.",
+  },
+];
+
+const legacyPages = [
+  {
+    icon: "∞",
+    title: "Digital Legacy",
+    description:
+      "Learn how to preserve your stories, values, memories, important information, and wishes as part of your digital legacy.",
+    href: "/digital-legacy",
+  },
+  {
+    icon: "◈",
+    title: "Private Documents",
+    description:
+      "Organize important personal and family documents in a private digital space.",
+    href: "/private-document-storage",
+  },
+  {
+    icon: "♡",
+    title: "Memory Vault",
+    description:
+      "Preserve photos, memories, stories, letters, and meaningful moments in a private digital archive.",
+    href: "/memory-vault",
+  },
+  {
+    icon: "⌂",
+    title: "Family Archive",
+    description:
+      "Create a private family archive for stories, photographs, documents, history, and memories.",
+    href: "/family-archive",
+  },
+  {
+    icon: "✦",
+    title: "Life Story",
+    description:
+      "Capture the experiences, milestones, and stories that shaped your life.",
+    href: "/life-story",
+  },
+  {
+    icon: "◇",
+    title: "Digital Inheritance",
+    description:
+      "Prepare meaningful messages, wishes, information, and digital assets for people you trust.",
+    href: "/digital-inheritance",
+  },
+];
 
 const faqs = [
   {
@@ -31,69 +106,8 @@ const faqs = [
     a: "You can preserve life stories, family memories, photos, personal messages, private documents, important information, values, wishes, digital assets, and other meaningful content.",
   },
   {
-    q: "Are my WHOLEGACY Private Notes secure?",
+    q: "Are WHOLEGACY Private Notes secure?",
     a: "WHOLEGACY Private Notes are designed as private spaces protected by password and workspace access.",
-  },
-];
-
-const features = [
-  {
-    icon: "✦",
-    title: "Your Story",
-    text: "Preserve your life story, experiences, milestones, and moments that shaped who you are.",
-  },
-  {
-    icon: "♡",
-    title: "Your Memories",
-    text: "Keep meaningful memories, photos, stories, and moments that should never be forgotten.",
-  },
-  {
-    icon: "⌂",
-    title: "Your Family",
-    text: "Build a private space for family stories, history, information, and memories that can be passed on.",
-  },
-  {
-    icon: "◈",
-    title: "Your Documents",
-    text: "Organize important personal and family documents in one private digital space.",
-  },
-  {
-    icon: "∞",
-    title: "Your Legacy",
-    text: "Prepare something meaningful for the people you love and future generations.",
-  },
-];
-
-const legacyPages = [
-  {
-    title: "Digital Legacy",
-    text: "Preserve your stories, values, memories, documents, and wishes as part of your digital legacy.",
-    href: "/digital-legacy",
-  },
-  {
-    title: "Private Documents",
-    text: "Keep important personal and family documents organized in a private digital space.",
-    href: "/private-document-storage",
-  },
-  {
-    title: "Memory Vault",
-    text: "Preserve meaningful memories, photos, stories, and personal moments in a private archive.",
-    href: "/memory-vault",
-  },
-  {
-    title: "Family Archive",
-    text: "Create a private family archive for photographs, stories, history, documents, and memories.",
-    href: "/family-archive",
-  },
-  {
-    title: "Life Story",
-    text: "Capture the experiences, milestones, and stories that shaped your life.",
-    href: "/life-story",
-  },
-  {
-    title: "Digital Inheritance",
-    text: "Prepare meaningful information, messages, wishes, and digital assets for people you trust.",
-    href: "/digital-inheritance",
   },
 ];
 
@@ -105,37 +119,29 @@ export default function HomePage() {
   const websiteJsonLd = {
     "@context": "https://schema.org",
     "@type": "WebSite",
+    "@id": `${SITE_URL}/#website`,
     name: "WHOLEGACY",
-    url: "https://wholelegacy.com",
-    description: WHOLEGACY_ENTITY_DEFINITION,
+    url: SITE_URL,
+    description: ENTITY_DESCRIPTION,
+    publisher: {
+      "@id": `${SITE_URL}/#organization`,
+    },
   };
 
   const organizationJsonLd = {
     "@context": "https://schema.org",
     "@type": "Organization",
+    "@id": `${SITE_URL}/#organization`,
     name: "WHOLEGACY",
-    url: "https://wholelegacy.com",
-    description: WHOLEGACY_ENTITY_DEFINITION,
-  };
-
-  const faqJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: faqs.map((faq) => ({
-      "@type": "Question",
-      name: faq.q,
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: faq.a,
-      },
-    })),
+    url: SITE_URL,
+    description: ENTITY_DESCRIPTION,
   };
 
   return (
     <main className="wl-home">
-      {/* ================================
-          STRUCTURED DATA
-      ================================= */}
+      {/* =========================================
+          ENTITY / WEBSITE STRUCTURED DATA
+      ========================================== */}
 
       <script
         type="application/ld+json"
@@ -151,20 +157,9 @@ export default function HomePage() {
         }}
       />
 
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(faqJsonLd),
-        }}
-      />
-
-      <p className="sr-only">
-        {WHOLEGACY_ENTITY_DEFINITION}
-      </p>
-
-      {/* ================================
+      {/* =========================================
           ANNOUNCEMENT
-      ================================= */}
+      ========================================== */}
 
       <div className="wl-announcement">
         <span>
@@ -176,9 +171,9 @@ export default function HomePage() {
         </a>
       </div>
 
-      {/* ================================
+      {/* =========================================
           NAVIGATION
-      ================================= */}
+      ========================================== */}
 
       <header className="wl-nav">
         <div className="wl-nav-inner">
@@ -187,7 +182,7 @@ export default function HomePage() {
             <span>WHOLEGACY</span>
           </a>
 
-          <nav className="wl-nav-links">
+          <nav className="wl-nav-links" aria-label="Main navigation">
             <a href="#why">Why WHOLEGACY</a>
             <a href="#features">Features</a>
             <a href="#how">How It Works</a>
@@ -201,29 +196,29 @@ export default function HomePage() {
         </div>
       </header>
 
-      {/* ================================
+      {/* =========================================
           HERO
-      ================================= */}
+      ========================================== */}
 
-      <section className="wl-hero">
+      <section className="wl-hero" aria-labelledby="main-heading">
         <div className="wl-hero-inner">
           <div className="wl-eyebrow">
             <span />
-            DIGITAL LEGACY PLATFORM
+            PRIVATE DIGITAL LEGACY PLATFORM
           </div>
 
-          <h1>
-            Your Story.
+          <h1 id="main-heading">
+            Private Digital Legacy
             <br />
-            Your Identity.
+            for Your Stories,
             <br />
-            <em>Your Legacy.</em>
+            <em>Memories &amp; Documents.</em>
           </h1>
 
           <p className="wl-hero-text">
-            Preserve the stories, memories, values, documents, and wishes
-            that define who you are — and leave something meaningful for
-            the people who matter most.
+            WHOLEGACY is a private digital legacy platform for preserving
+            your stories, memories, important documents, values, messages,
+            and wishes for yourself and future generations.
           </p>
 
           <div className="wl-hero-actions">
@@ -253,9 +248,10 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* HERO VISUAL */}
-
-        <div className="wl-hero-visual">
+        <div
+          className="wl-hero-visual"
+          aria-hidden="true"
+        >
           <div className="wl-orbit wl-orbit-one" />
           <div className="wl-orbit wl-orbit-two" />
 
@@ -267,7 +263,7 @@ export default function HomePage() {
 
             <div className="wl-card-content">
               <div className="wl-card-label">
-                YOUR STORY
+                YOUR DIGITAL LEGACY
               </div>
 
               <h3>
@@ -279,23 +275,26 @@ export default function HomePage() {
               <p>
                 Stories. Memories.
                 <br />
-                Values. Wishes.
+                Documents. Wishes.
               </p>
             </div>
 
             <div className="wl-card-bottom">
-              <span>Digital Legacy</span>
+              <span>Private Digital Legacy</span>
               <span>∞</span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ================================
-          TRUST STRIP
-      ================================= */}
+      {/* =========================================
+          TRUST / ENTITY CONTEXT
+      ========================================== */}
 
-      <section className="wl-trust">
+      <section
+        className="wl-trust"
+        aria-label="WHOLEGACY benefits"
+      >
         <div>
           <strong>ONE PLACE</strong>
           <span>for everything that matters</span>
@@ -312,18 +311,22 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ================================
+      {/* =========================================
           WHY WHOLEGACY
-      ================================= */}
+      ========================================== */}
 
-      <section id="why" className="wl-section wl-light">
+      <section
+        id="why"
+        className="wl-section wl-light"
+        aria-labelledby="why-heading"
+      >
         <div className="wl-container">
           <div className="wl-heading">
             <div className="wl-section-label">
               WHY WHOLEGACY
             </div>
 
-            <h2>
+            <h2 id="why-heading">
               Some things are too important
               <br />
               to be forgotten.
@@ -332,14 +335,14 @@ export default function HomePage() {
             <p>
               Photos can disappear. Documents can be misplaced.
               Stories can fade. Memories can become fragments.
-              WHOLEGACY gives you a place to intentionally preserve
-              what makes your life meaningful.
+              WHOLEGACY gives you a private place to intentionally
+              preserve what makes your life meaningful.
             </p>
           </div>
 
           <div className="wl-feature-grid">
             {features.map((feature) => (
-              <div
+              <article
                 className="wl-feature-card"
                 key={feature.title}
               >
@@ -350,17 +353,21 @@ export default function HomePage() {
                 <h3>{feature.title}</h3>
 
                 <p>{feature.text}</p>
-              </div>
+              </article>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ================================
+      {/* =========================================
           HOW IT WORKS
-      ================================= */}
+      ========================================== */}
 
-      <section id="how" className="wl-section">
+      <section
+        id="how"
+        className="wl-section"
+        aria-labelledby="how-heading"
+      >
         <div className="wl-container">
           <div className="wl-two-column">
             <div>
@@ -368,7 +375,7 @@ export default function HomePage() {
                 HOW IT WORKS
               </div>
 
-              <h2>
+              <h2 id="how-heading">
                 Create something
                 <br />
                 that outlives you.
@@ -376,7 +383,7 @@ export default function HomePage() {
 
               <p className="wl-section-text">
                 WHOLEGACY turns the things that matter to you
-                into an organized digital legacy.
+                into an organized private digital legacy.
               </p>
 
               <div className="wl-steps">
@@ -385,7 +392,6 @@ export default function HomePage() {
 
                   <div>
                     <h3>Create</h3>
-
                     <p>
                       Create your personal WHOLEGACY space.
                     </p>
@@ -397,10 +403,9 @@ export default function HomePage() {
 
                   <div>
                     <h3>Preserve</h3>
-
                     <p>
-                      Add stories, memories, documents, values,
-                      and personal messages.
+                      Add stories, memories, documents,
+                      values, and personal messages.
                     </p>
                   </div>
                 </div>
@@ -410,10 +415,9 @@ export default function HomePage() {
 
                   <div>
                     <h3>Protect</h3>
-
                     <p>
-                      Organize and protect information that
-                      matters to you.
+                      Organize and protect information
+                      that matters to you.
                     </p>
                   </div>
                 </div>
@@ -423,17 +427,14 @@ export default function HomePage() {
 
                   <div>
                     <h3>Leave a Legacy</h3>
-
                     <p>
-                      Prepare something meaningful for the
-                      people who matter most.
+                      Prepare something meaningful for
+                      the people who matter most.
                     </p>
                   </div>
                 </div>
               </div>
             </div>
-
-            {/* DASHBOARD */}
 
             <div className="wl-dashboard">
               <div className="wl-dashboard-top">
@@ -441,9 +442,7 @@ export default function HomePage() {
                 <span />
                 <span />
 
-                <label>
-                  WHOLEGACY
-                </label>
+                <label>WHOLEGACY</label>
               </div>
 
               <div className="wl-dashboard-body">
@@ -458,11 +457,9 @@ export default function HomePage() {
                 </aside>
 
                 <div className="wl-dashboard-main">
-                  <small>YOUR LEGACY</small>
+                  <small>YOUR DIGITAL LEGACY</small>
 
-                  <h3>
-                    My Life Story
-                  </h3>
+                  <h3>My Life Story</h3>
 
                   <div className="wl-timeline">
                     <div>
@@ -475,7 +472,7 @@ export default function HomePage() {
                     <div>
                       <b>2010</b>
                       <span>
-                        Important moments & memories
+                        Important moments &amp; memories
                       </span>
                     </div>
 
@@ -493,9 +490,9 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ================================
+      {/* =========================================
           PRIVATE NOTE
-      ================================= */}
+      ========================================== */}
 
       <section className="wl-private">
         <div className="wl-container">
@@ -518,10 +515,10 @@ export default function HomePage() {
               </p>
 
               <a
-                href="/p/your-slug"
+                href="/private-documents-and-memories"
                 className="wl-button wl-button-primary"
               >
-                Open Private Note →
+                Explore Private Space →
               </a>
             </div>
 
@@ -547,7 +544,7 @@ export default function HomePage() {
 
                 <div className="wl-note-content">
                   <span>
-                    your text goes here...
+                    your private thoughts go here...
                   </span>
                 </div>
               </div>
@@ -556,14 +553,14 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ================================
-          EXPLORE YOUR LEGACY
-          TOPICAL / GEO HUB
-      ================================= */}
+      {/* =========================================
+          TOPICAL HUB
+      ========================================== */}
 
       <section
         id="explore"
         className="wl-section wl-light"
+        aria-labelledby="explore-heading"
       >
         <div className="wl-container">
           <div className="wl-heading center">
@@ -571,10 +568,10 @@ export default function HomePage() {
               EXPLORE YOUR LEGACY
             </div>
 
-            <h2>
+            <h2 id="explore-heading">
               Everything that matters
               <br />
-              in one place.
+              in one private place.
             </h2>
 
             <p>
@@ -585,18 +582,18 @@ export default function HomePage() {
           </div>
 
           <div className="wl-feature-grid">
-            {legacyPages.map((page, index) => (
-              <div
+            {legacyPages.map((page) => (
+              <article
                 className="wl-feature-card"
                 key={page.href}
               >
                 <div className="wl-feature-icon">
-                  {["∞", "◈", "♡", "⌂", "✦", "◇"][index]}
+                  {page.icon}
                 </div>
 
                 <h3>{page.title}</h3>
 
-                <p>{page.text}</p>
+                <p>{page.description}</p>
 
                 <a
                   href={page.href}
@@ -608,21 +605,22 @@ export default function HomePage() {
                     fontWeight: 600,
                   }}
                 >
-                  Explore →
+                  Explore {page.title} →
                 </a>
-              </div>
+              </article>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ================================
+      {/* =========================================
           FEATURE EXPLORER
-      ================================= */}
+      ========================================== */}
 
       <section
         id="features"
         className="wl-section wl-light"
+        aria-labelledby="features-heading"
       >
         <div className="wl-container">
           <div className="wl-heading center">
@@ -630,7 +628,7 @@ export default function HomePage() {
               BUILT FOR YOUR LEGACY
             </div>
 
-            <h2>
+            <h2 id="features-heading">
               Everything you need
               <br />
               to preserve what matters.
@@ -649,6 +647,7 @@ export default function HomePage() {
                 onClick={() =>
                   setActiveFeature(index)
                 }
+                type="button"
               >
                 {feature.title}
               </button>
@@ -680,59 +679,65 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ================================
-          FAQ
-      ================================= */}
+      {/* =========================================
+          FAQ / GEO
+      ========================================== */}
 
-      <section id="faq" className="wl-section">
+      <section
+        id="faq"
+        className="wl-section"
+        aria-labelledby="faq-heading"
+      >
         <div className="wl-container wl-faq-container">
           <div className="wl-heading center">
             <div className="wl-section-label">
-              FAQ
+              FREQUENTLY ASKED QUESTIONS
             </div>
 
-            <h2>
+            <h2 id="faq-heading">
               Questions about WHOLEGACY
             </h2>
 
             <p>
-              Learn more about digital legacy,
-              private documents, memories, family
-              archives, and preserving what matters.
+              Clear answers about private digital legacy,
+              private documents, memories, family archives,
+              and preserving what matters.
             </p>
           </div>
 
           <div className="wl-faq-list">
             {faqs.map((faq, index) => {
-              const open = openFaq === index;
+              const isOpen = openFaq === index;
 
               return (
-                <div
+                <article
                   className={`wl-faq ${
-                    open ? "open" : ""
+                    isOpen ? "open" : ""
                   }`}
                   key={faq.q}
                 >
                   <button
+                    type="button"
                     onClick={() =>
                       setOpenFaq(
-                        open ? null : index
+                        isOpen ? null : index
                       )
                     }
+                    aria-expanded={isOpen}
                   >
                     <span>{faq.q}</span>
 
                     <b>
-                      {open ? "−" : "+"}
+                      {isOpen ? "−" : "+"}
                     </b>
                   </button>
 
-                  {open && (
+                  {isOpen && (
                     <div className="wl-faq-answer">
                       {faq.a}
                     </div>
                   )}
-                </div>
+                </article>
               );
             })}
           </div>
@@ -751,15 +756,15 @@ export default function HomePage() {
                 fontWeight: 600,
               }}
             >
-              View all frequently asked questions →
+              View the complete WHOLEGACY FAQ →
             </a>
           </div>
         </div>
       </section>
 
-      {/* ================================
+      {/* =========================================
           FINAL CTA
-      ================================= */}
+      ========================================== */}
 
       <section id="start" className="wl-final">
         <div className="wl-final-inner">
@@ -784,14 +789,21 @@ export default function HomePage() {
                 setSlug(e.target.value)
               }
               placeholder="Choose your legacy URL"
+              aria-label="Choose your legacy URL"
             />
 
             <button
+              type="button"
               onClick={() => {
-                if (!slug.trim()) return;
+                const cleanSlug = slug
+                  .trim()
+                  .toLowerCase()
+                  .replace(/\s+/g, "-");
+
+                if (!cleanSlug) return;
 
                 window.location.href =
-                  `/p/${slug.trim().toLowerCase()}`;
+                  `/p/${cleanSlug}`;
               }}
             >
               Create My Legacy →
@@ -805,9 +817,9 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ================================
+      {/* =========================================
           FOOTER
-      ================================= */}
+      ========================================== */}
 
       <footer className="wl-footer">
         <div className="wl-container wl-footer-inner">
@@ -824,13 +836,13 @@ export default function HomePage() {
             </a>
 
             <p>
-              Your Story. Your Identity.
-              Your Legacy.
+              Private Digital Legacy for Your Stories,
+              Memories &amp; Documents.
             </p>
           </div>
 
           <div className="wl-footer-links">
-            <a href="/about">About</a>
+            <a href="/about">About WHOLEGACY</a>
 
             <a href="/digital-legacy">
               Digital Legacy
@@ -838,6 +850,10 @@ export default function HomePage() {
 
             <a href="/private-document-storage">
               Private Documents
+            </a>
+
+            <a href="/private-documents-and-memories">
+              Private Documents &amp; Memories
             </a>
 
             <a href="/memory-vault">
@@ -856,12 +872,12 @@ export default function HomePage() {
               Digital Inheritance
             </a>
 
-            <a href="/faq">
-              FAQ
-            </a>
-
             <a href="/security">
               Security
+            </a>
+
+            <a href="/faq">
+              FAQ
             </a>
           </div>
 
