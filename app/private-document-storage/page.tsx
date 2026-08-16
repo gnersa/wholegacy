@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   title: content.title,
   description: content.description,
   alternates: {
-    canonical: `https://wholelegacy.com/private-document-storage`,
+    canonical: `https://wholegacy.com/private-document-storage`,
   },
 };
 
@@ -25,11 +25,11 @@ const jsonLd = {
   "@type": "WebPage",
   "name": content.title,
   "description": content.description,
-  "url": `https://wholelegacy.com/private-document-storage`,
+  "url": `https://wholegacy.com/private-document-storage`,
   "isPartOf": {
     "@type": "WebSite",
     "name": "WHOLEGACY",
-    "url": "https://wholelegacy.com"
+    "url": "https://wholegacy.com"
   }
 };
 
