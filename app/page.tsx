@@ -1,10 +1,119 @@
-"use client";
+import Image from "next/image";
 
-import { useState } from "react";
+const features = [
+  {
+    icon: "▱",
+    title: "Your Story",
+    text: "Capture your life story, milestones, lessons, and memories in one meaningful digital space.",
+  },
+  {
+    icon: "▧",
+    title: "Your Memories",
+    text: "Preserve photos, videos, letters, and personal memories — the moments that mean the most.",
+  },
+  {
+    icon: "♧",
+    title: "Your Documents",
+    text: "Keep important personal and family documents organized in a private digital space.",
+  },
+  {
+    icon: "♙",
+    title: "Your People",
+    text: "Choose the people you trust and decide what parts of your legacy you want to share.",
+  },
+  {
+    icon: "♡",
+    title: "Your Legacy",
+    text: "Preserve messages, instructions, values, and wishes that can guide future generations.",
+  },
+];
 
-const WHOLEGACY_ENTITY_DEFINITION =
-  "WHOLEGACY is a private digital legacy platform for preserving important documents, memories, stories, values, and wishes for yourself and future generations.";
+const steps = [
+  {
+    number: "01",
+    title: "Create your space",
+    text: "Create your private WHOLEGACY space and start building your personal digital legacy.",
+  },
+  {
+    number: "02",
+    title: "Preserve what matters",
+    text: "Add your stories, memories, important documents, messages, values, and wishes.",
+  },
+  {
+    number: "03",
+    title: "Organize your legacy",
+    text: "Keep the important parts of your life organized in one meaningful digital space.",
+  },
+  {
+    number: "04",
+    title: "Leave a legacy",
+    text: "Preserve something meaningful for yourself, your family, and future generations.",
+  },
+];
 
+const legacyPaths = [
+  {
+    icon: "∞",
+    title: "Digital Legacy",
+    text: "Preserve the stories, values, experiences, and information that define your life.",
+    href: "/digital-legacy",
+    cta: "Explore Digital Legacy",
+  },
+  {
+    icon: "◈",
+    title: "Private Documents",
+    text: "Keep important personal and family documents organized in one private digital space.",
+    href: "/private-document-storage",
+    cta: "Explore Private Documents",
+  },
+  {
+    icon: "♡",
+    title: "Memory Vault",
+    text: "Preserve photos, memories, stories, and meaningful moments in your private digital memory vault.",
+    href: "/memory-vault",
+    cta: "Explore Memory Vault",
+  },
+  {
+    icon: "⌂",
+    title: "Family Archive",
+    text: "Build a private family archive for preserving family stories, history, documents, and memories.",
+    href: "/family-archive",
+    cta: "Explore Family Archive",
+  },
+  {
+    icon: "✦",
+    title: "Life Story",
+    text: "Preserve the experiences, milestones, and stories that shaped who you are.",
+    href: "/life-story",
+    cta: "Preserve Your Life Story",
+  },
+  {
+    icon: "◇",
+    title: "Digital Inheritance",
+    text: "Prepare meaningful information, messages, and digital assets that can be passed on to people you trust.",
+    href: "/digital-inheritance",
+    cta: "Explore Digital Inheritance",
+  },
+];
+
+const whyWholeLegacy = [
+  {
+    title: "Private",
+    text: "Keep your personal memories, stories, and documents in a space designed around privacy.",
+  },
+  {
+    title: "Meaningful",
+    text: "Preserve the stories and context behind the documents, memories, and moments that matter.",
+  },
+  {
+    title: "Personal",
+    text: "Build a digital archive that represents your life, your family, your experiences, and your values.",
+  },
+  {
+    title: "Future-focused",
+    text: "Preserve something meaningful for the people and generations that come after you.",
+  },
+];
 
 const faqs = [
   {
@@ -21,7 +130,7 @@ const faqs = [
   },
   {
     q: "Where can I store private documents and memories online?",
-    a: "WHOLEGACY provides a private digital space specifically designed for preserving important documents, personal memories, family stories, photos, and other meaningful information together in one digital legacy.",
+    a: "WHOLEGACY provides a private digital space specifically designed for preserving important documents, personal memories, family stories, photos, and other meaningful information together as part of your digital legacy.",
   },
   {
     q: "What is a digital memory vault?",
@@ -37,638 +146,422 @@ const faqs = [
   },
 ];
 
-const features = [
-  {
-    icon: "✦",
-    title: "Your Story",
-    text: "Preserve your life story, experiences, milestones, and personal stories so the moments that shaped your life can be remembered for generations.",
-  },
-  {
-    icon: "♡",
-    title: "Your Memories",
-    text: "Keep meaningful memories, photos, moments, and personal stories in a private digital memory vault that you can build over time.",
-  },
-  {
-    icon: "⌂",
-    title: "Your Family",
-    text: "Create a private family archive for preserving family stories, history, memories, and information that can be passed on to future generations.",
-  },
-  {
-    icon: "◈",
-    title: "Your Documents",
-    text: "Organize important personal and family documents in one private digital space alongside the memories and stories that give them meaning.",
-  },
-  {
-    icon: "∞",
-    title: "Your Legacy",
-    text: "Build your digital legacy by preserving the documents, memories, stories, values, and wishes you want to leave for the people who matter to you.",
-  },
-];
-
-export default function HomePage() {
-  const [activeFeature, setActiveFeature] = useState(0);
-  const [openFaq, setOpenFaq] = useState<number | null>(null);
-  const [slug, setSlug] = useState("");
-
+export default function Home() {
   return (
-    <main className="wl-home">
-      <p className="sr-only">
-        {WHOLEGACY_ENTITY_DEFINITION}
-      </p>
+    <main>
+      {/* =========================
+          NAVIGATION
+      ========================== */}
+      <nav className="nav container">
+        <a className="brand" href="/">
+          <span className="brand-mark">♧</span>
+          WHOLEGACY
+        </a>
 
-
-      {/* ANNOUNCEMENT */}
-      <div className="wl-announcement">
-        <span>Preserve what matters. Leave something meaningful behind.</span>
-        <a href="#start">Create your legacy →</a>
-      </div>
-
-      {/* NAVIGATION */}
-      <header className="wl-nav">
-        <div className="wl-nav-inner">
-
-          <a href="/" className="wl-brand">
-            <span className="wl-brand-mark">W</span>
-            <span>WHOLEGACY</span>
-          </a>
-
-          <nav className="wl-nav-links">
-            <a href="#why">Why WHOLEGACY</a>
-            <a href="#features">Features</a>
-            <a href="#how">How It Works</a>
-            <a href="#faq">FAQ</a>
-          </nav>
-
-          <a href="#start" className="wl-nav-button">
-            Start Your Legacy
-          </a>
-
-        </div>
-      </header>
-
-      {/* HERO */}
-      <section className="wl-hero">
-
-        <div className="wl-hero-inner">
-
-          <div className="wl-eyebrow">
-            <span />
-            DIGITAL LEGACY PLATFORM
-          </div>
-
-          <h1>
-            Your Story.
-            <br />
-            Your Identity.
-            <br />
-            <em>Your Legacy.</em>
-          </h1>
-
-          <p className="wl-hero-text">
-            Preserve the stories, memories, values, documents, and wishes
-            that define who you are — and leave something meaningful for
-            the people who matter most.
-          </p>
-
-          <div className="wl-hero-actions">
-            <a href="#start" className="wl-button-primary">
-              Begin Your Legacy
-              <span>→</span>
-            </a>
-
-            <a href="#how" className="wl-button-secondary">
-              Discover WHOLEGACY
-            </a>
-          </div>
-
-          <div className="wl-hero-note">
-            <span>✓</span>
-            Private by design
-            <span>•</span>
-            Built for your future
-            <span>•</span>
-            Your story, your control
-          </div>
-
+        <div className="nav-links">
+          <a href="#home">Home</a>
+          <a href="#features">Features</a>
+          <a href="#legacy">Explore</a>
+          <a href="#how">How It Works</a>
+          <a href="#faq">FAQ</a>
+          <a href="/about">About</a>
         </div>
 
-        {/* HERO VISUAL */}
-        <div className="wl-hero-visual">
+        <a className="button button-small" href="#notify">
+          Notify Me <span>→</span>
+        </a>
+      </nav>
 
-          <div className="wl-orbit wl-orbit-one" />
-          <div className="wl-orbit wl-orbit-two" />
+      {/* =========================
+          HERO
+      ========================== */}
+      <section id="home" className="hero">
+        <div className="container hero-grid">
+          <div className="hero-copy">
+            <p className="eyebrow">
+              YOUR STORY. YOUR IDENTITY. YOUR LEGACY.
+            </p>
 
-          <div className="wl-legacy-card">
-
-            <div className="wl-card-top">
-              <span>WHOLEGACY</span>
-              <span>PRIVATE</span>
-            </div>
-
-            <div className="wl-card-content">
-
-              <div className="wl-card-label">
-                YOUR STORY
-              </div>
-
-              <h3>
-                Everything that
-                <br />
-                makes you, you.
-              </h3>
-
-              <p>
-                Stories. Memories.
-                <br />
-                Values. Wishes.
-              </p>
-
-            </div>
-
-            <div className="wl-card-bottom">
-              <span>Digital Legacy</span>
-              <span>∞</span>
-            </div>
-
-          </div>
-
-        </div>
-
-      </section>
-
-      {/* TRUST STRIP */}
-      <section className="wl-trust">
-        <div>
-          <strong>ONE PLACE</strong>
-          <span>for everything that matters</span>
-        </div>
-
-        <div>
-          <strong>PRIVATE</strong>
-          <span>by design</span>
-        </div>
-
-        <div>
-          <strong>MEANINGFUL</strong>
-          <span>for generations</span>
-        </div>
-      </section>
-
-      {/* WHY */}
-      <section id="why" className="wl-section wl-light">
-
-        <div className="wl-container">
-
-          <div className="wl-heading">
-            <div className="wl-section-label">
-              WHY WHOLEGACY
-            </div>
-
-            <h2>
-              Some things are too important
+            <h1>
+              Preserve what matters.
               <br />
-              to be forgotten.
-            </h2>
+              <em>Pass it on.</em>
+            </h1>
 
-            <p>
-              Photos can disappear. Documents can be misplaced.
-              Stories can fade. Memories can become fragments.
-              WHOLEGACY gives you a place to intentionally preserve
-              what makes your life meaningful.
+            <p className="hero-text">
+              WHOLEGACY is a private digital legacy platform for preserving
+              important documents, memories, stories, values, and wishes for
+              yourself and future generations.
+            </p>
+
+            <form className="signup">
+              <input
+                aria-label="Email address"
+                type="email"
+                placeholder="Enter your email"
+                required
+              />
+
+              <button className="button" type="submit">
+                Notify Me <span>→</span>
+              </button>
+            </form>
+
+            <p className="privacy">
+              <span>♙</span> We respect your privacy. No spam, ever.
             </p>
           </div>
 
-          <div className="wl-feature-grid">
+          <div className="hero-art">
+            <Image
+              src="/hero-mockup.png"
+              alt="WHOLEGACY private digital legacy platform for preserving memories and documents"
+              fill
+              priority
+              sizes="(max-width: 900px) 100vw, 55vw"
+              className="hero-image"
+            />
+          </div>
+        </div>
+      </section>
 
+      {/* =========================
+          FEATURES
+      ========================== */}
+      <section id="features" className="section features-section">
+        <div className="container">
+          <div className="center-heading">
+            <p className="eyebrow">BUILT FOR WHAT TRULY MATTERS</p>
+
+            <h2>More than files. It&apos;s your legacy.</h2>
+
+            <p>
+              WHOLEGACY helps you collect, organize, and preserve the moments,
+              stories, documents, and information that make your life meaningful.
+            </p>
+          </div>
+
+          <div className="features-grid">
             {features.map((feature) => (
-              <div className="wl-feature-card" key={feature.title}>
-
-                <div className="wl-feature-icon">
-                  {feature.icon}
-                </div>
+              <article className="feature" key={feature.title}>
+                <div className="feature-icon">{feature.icon}</div>
 
                 <h3>{feature.title}</h3>
 
                 <p>{feature.text}</p>
-
-              </div>
+              </article>
             ))}
-
           </div>
-
         </div>
-
       </section>
 
-      {/* HOW IT WORKS */}
-      <section id="how" className="wl-section">
-
-        <div className="wl-container">
-
-          <div className="wl-two-column">
-
-            <div>
-
-              <div className="wl-section-label">
-                HOW IT WORKS
-              </div>
-
-              <h2>
-                Create something
-                <br />
-                that outlives you.
-              </h2>
-
-              <p className="wl-section-text">
-                WHOLEGACY turns the things that matter to you
-                into an organized digital legacy.
-              </p>
-
-              <div className="wl-steps">
-
-                <div className="wl-step">
-                  <span>01</span>
-                  <div>
-                    <h3>Create</h3>
-                    <p>
-                      Create your personal WHOLEGACY space.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="wl-step">
-                  <span>02</span>
-                  <div>
-                    <h3>Preserve</h3>
-                    <p>
-                      Add stories, memories, documents, values,
-                      and personal messages.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="wl-step">
-                  <span>03</span>
-                  <div>
-                    <h3>Protect</h3>
-                    <p>
-                      Organize and protect information that
-                      matters to you.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="wl-step">
-                  <span>04</span>
-                  <div>
-                    <h3>Leave a Legacy</h3>
-                    <p>
-                      Prepare something meaningful for the
-                      people who matter most.
-                    </p>
-                  </div>
-                </div>
-
-              </div>
-
-            </div>
-
-            {/* VISUAL */}
-            <div className="wl-dashboard">
-
-              <div className="wl-dashboard-top">
-                <span />
-                <span />
-                <span />
-
-                <label>
-                  WHOLEGACY
-                </label>
-              </div>
-
-              <div className="wl-dashboard-body">
-
-                <aside>
-                  <strong>MY LEGACY</strong>
-
-                  <div>My Story</div>
-                  <div>Memories</div>
-                  <div>Documents</div>
-                  <div>Values</div>
-                  <div>My Wishes</div>
-                </aside>
-
-                <div className="wl-dashboard-main">
-
-                  <small>YOUR LEGACY</small>
-
-                  <h3>
-                    My Life Story
-                  </h3>
-
-                  <div className="wl-timeline">
-
-                    <div>
-                      <b>1990</b>
-                      <span>
-                        The beginning of my story
-                      </span>
-                    </div>
-
-                    <div>
-                      <b>2010</b>
-                      <span>
-                        Important moments & memories
-                      </span>
-                    </div>
-
-                    <div>
-                      <b>2026</b>
-                      <span>
-                        Building my legacy
-                      </span>
-                    </div>
-
-                  </div>
-
-                </div>
-
-              </div>
-
-            </div>
-
-          </div>
-
-        </div>
-
-      </section>
-
-      {/* PRIVATE NOTE */}
-      <section className="wl-private">
-
-        <div className="wl-container">
-
-          <div className="wl-private-card">
-
-            <div>
-              <div className="wl-section-label">
-                PRIVATE NOTE
-              </div>
-
-              <h2>
-                Some thoughts
-                <br />
-                are meant to stay private.
-              </h2>
-
-              <p>
-                WHOLEGACY Private Note gives you a simple,
-                protected space to write down things that
-                matter to you.
-              </p>
-
-              <a href="/p/your-slug" className="wl-button-primary">
-                Open Private Note →
-              </a>
-            </div>
-
-            <div className="wl-private-visual">
-
-              <div className="wl-note-window">
-
-                <div className="wl-note-header">
-                  <span>WHOLEGACY</span>
-
-                  <div>
-                    <i />
-                    <i />
-                    <i />
-                  </div>
-                </div>
-
-                <div className="wl-note-tabs">
-                  <span>Note 1</span>
-                  <span className="active">My Story</span>
-                  <span>+</span>
-                </div>
-
-                <div className="wl-note-content">
-                  <span>your text goes here...</span>
-                </div>
-
-              </div>
-
-            </div>
-
-          </div>
-
-        </div>
-
-      </section>
-
-      {/* FEATURE EXPLORER */}
-      <section id="features" className="wl-section wl-light">
-
-        <div className="wl-container">
-
-          <div className="wl-heading center">
-
-            <div className="wl-section-label">
-              BUILT FOR YOUR LEGACY
-            </div>
-
-            <h2>
-              Everything you need
-              <br />
-              to preserve what matters.
-            </h2>
-
-          </div>
-
-          <div className="wl-feature-tabs">
-
-            {features.map((feature, index) => (
-              <button
-                key={feature.title}
-                className={
-                  activeFeature === index
-                    ? "active"
-                    : ""
-                }
-                onClick={() => setActiveFeature(index)}
-              >
-                {feature.title}
-              </button>
-            ))}
-
-          </div>
-
-          <div className="wl-feature-detail">
-
-            <div className="wl-feature-detail-icon">
-              {features[activeFeature].icon}
-            </div>
-
-            <div>
-
-              <div className="wl-section-label">
-                {String(activeFeature + 1).padStart(2, "0")}
-              </div>
-
-              <h3>
-                {features[activeFeature].title}
-              </h3>
-
-              <p>
-                {features[activeFeature].text}
-              </p>
-
-            </div>
-
-          </div>
-
-        </div>
-
-      </section>
-
-      {/* FAQ */}
-      <section id="faq" className="wl-section">
-
-        <div className="wl-container wl-faq-container">
-
-          <div className="wl-heading center">
-
-            <div className="wl-section-label">
-              FAQ
-            </div>
-
-            <h2>
-              Questions about WHOLEGACY
-            </h2>
-
-          </div>
-
-          <div className="wl-faq-list">
-
-            {faqs.map((faq, index) => {
-
-              const open = openFaq === index;
-
-              return (
-                <div
-                  className={`wl-faq ${open ? "open" : ""}`}
-                  key={faq.q}
-                >
-
-                  <button
-                    onClick={() =>
-                      setOpenFaq(open ? null : index)
-                    }
-                  >
-                    <span>{faq.q}</span>
-                    <b>{open ? "−" : "+"}</b>
-                  </button>
-
-                  {open && (
-                    <div className="wl-faq-answer">
-                      {faq.a}
-                    </div>
-                  )}
-
-                </div>
-              );
-            })}
-
-          </div>
-
-        </div>
-
-      </section>
-
-      {/* CTA */}
-      <section id="start" className="wl-final">
-
-        <div className="wl-final-inner">
-
-          <div className="wl-section-label">
-            YOUR LEGACY STARTS HERE
-          </div>
-
-          <h2>
-            What will you leave behind?
-          </h2>
-
-          <p>
-            Start preserving your story today.
-            It may become one of the most meaningful
-            things you leave for someone tomorrow.
-          </p>
-
-          <div className="wl-start-form">
-
-            <input
-              value={slug}
-              onChange={(e) => setSlug(e.target.value)}
-              placeholder="Choose your legacy URL"
-            />
-
-            <button
-              onClick={() => {
-                if (!slug.trim()) return;
-                window.location.href =
-                  `/p/${slug.trim().toLowerCase()}`;
-              }}
-            >
-              Create My Legacy →
-            </button>
-
-          </div>
-
-          <small>
-            wholegacy.com/p/{slug || "your-name"}
-          </small>
-
-        </div>
-
-      </section>
-
-      {/* FOOTER */}
-      <footer className="wl-footer">
-
-        <div className="wl-container wl-footer-inner">
-
-          <div>
-
-            <a href="/" className="wl-brand footer-brand">
-              <span className="wl-brand-mark">W</span>
-              <span>WHOLEGACY</span>
-            </a>
+      {/* =========================
+          EXPLORE YOUR LEGACY
+          IMPORTANT INTERNAL LINKS
+      ========================== */}
+      <section id="legacy" className="section">
+        <div className="container">
+          <div className="center-heading">
+            <p className="eyebrow">EXPLORE YOUR LEGACY</p>
+
+            <h2>Everything That Matters, In One Place</h2>
 
             <p>
-              Your Story. Your Identity. Your Legacy.
+              Explore the different ways WHOLEGACY helps you preserve your
+              documents, memories, stories, and family history for generations
+              to come.
             </p>
-
           </div>
 
-          <div className="wl-footer-links">
+          <div className="features-grid">
+            {legacyPaths.map((item) => (
+              <article className="feature" key={item.href}>
+                <div className="feature-icon">{item.icon}</div>
 
-            <a href="#why">Why WHOLEGACY</a>
-            <a href="#features">Features</a>
-            <a href="#how">How It Works</a>
-            <a href="#faq">FAQ</a>
+                <h3>{item.title}</h3>
 
+                <p>{item.text}</p>
+
+                <a href={item.href}>
+                  {item.cta} <span aria-hidden="true">→</span>
+                </a>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* =========================
+          HOW IT WORKS
+      ========================== */}
+      <section id="how" className="section how-section">
+        <div className="container how-grid">
+          <div>
+            <p className="eyebrow">SIMPLE AND THOUGHTFUL</p>
+
+            <h2>How WHOLEGACY works</h2>
+
+            <div className="steps">
+              {steps.map((step) => (
+                <div className="step" key={step.number}>
+                  <div className="step-number">{step.number}</div>
+
+                  <div>
+                    <h3>{step.title}</h3>
+
+                    <p>{step.text}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="dashboard-card">
+            <div className="window-bar">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+
+            <div className="dashboard-layout">
+              <aside>
+                <strong>♧ WHOLEGACY</strong>
+
+                <small>Dashboard</small>
+                <small>My Story</small>
+                <small>Memories</small>
+                <small>Documents</small>
+                <small>People</small>
+                <small>Legacy Plan</small>
+                <small>Messages</small>
+              </aside>
+
+              <div className="dashboard-main">
+                <p className="mini-label">WELCOME, ALEX</p>
+
+                <h3>My Story</h3>
+
+                <div className="fake-timeline">
+                  <div>
+                    <b>1990</b>
+                    <span>Born in Jakarta</span>
+                  </div>
+
+                  <div>
+                    <b>2008</b>
+                    <span>High School</span>
+                  </div>
+
+                  <div>
+                    <b>2012</b>
+                    <span>Graduated from University</span>
+                  </div>
+                </div>
+
+                <div className="memory-row">
+                  <div></div>
+                  <div></div>
+                  <div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* =========================
+          WHY WHOLEGACY
+      ========================== */}
+      <section className="section">
+        <div className="container">
+          <div className="center-heading">
+            <p className="eyebrow">WHY WHOLEGACY</p>
+
+            <h2>More Than Cloud Storage</h2>
+
+            <p>
+              WHOLEGACY is designed specifically for your digital legacy — not
+              just for storing files.
+            </p>
+          </div>
+
+          <div className="features-grid">
+            {whyWholeLegacy.map((item) => (
+              <article className="feature" key={item.title}>
+                <h3>{item.title}</h3>
+
+                <p>{item.text}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* =========================
+          FAQ
+      ========================== */}
+      <section id="faq" className="section">
+        <div className="container">
+          <div className="center-heading">
+            <p className="eyebrow">FREQUENTLY ASKED QUESTIONS</p>
+
+            <h2>Questions About WHOLEGACY</h2>
+
+            <p>
+              Learn more about digital legacy, private documents, memories,
+              family archives, and how WHOLEGACY helps preserve what matters.
+            </p>
+          </div>
+
+          <div className="faq-list">
+            {faqs.map((faq) => (
+              <details className="faq-item" key={faq.q}>
+                <summary>{faq.q}</summary>
+
+                <p>{faq.a}</p>
+              </details>
+            ))}
+          </div>
+
+          <div className="center-heading" style={{ marginTop: "40px" }}>
+            <a href="/faq">
+              View all frequently asked questions <span>→</span>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* =========================
+          PRIVATE DOCUMENTS CTA
+          DIRECT GEO CONNECTION
+      ========================== */}
+      <section className="section">
+        <div className="container">
+          <div className="center-heading">
+            <p className="eyebrow">PRIVATE DOCUMENTS & MEMORIES</p>
+
+            <h2>Preserve What Matters Most</h2>
+
+            <p>
+              Looking for a private place to keep your important documents,
+              memories, family stories, and personal information? WHOLEGACY
+              brings them together as part of your digital legacy.
+            </p>
+
+            <p style={{ marginTop: "24px" }}>
+              <a href="/private-documents-and-memories">
+                Explore Private Documents &amp; Memories <span>→</span>
+              </a>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* =========================
+          NOTIFY / CTA
+      ========================== */}
+      <section id="notify" className="notify-section">
+        <div className="container notify-inner">
+          <div>
+            <p className="eyebrow">COMING SOON</p>
+
+            <h2>Something meaningful is coming.</h2>
+
+            <p>
+              Be the first to know when WHOLEGACY launches.
+            </p>
+          </div>
+
+          <form className="signup signup-dark">
+            <input
+              aria-label="Email address"
+              type="email"
+              placeholder="Enter your email"
+              required
+            />
+
+            <button className="button" type="submit">
+              Notify Me <span>→</span>
+            </button>
+          </form>
+        </div>
+      </section>
+
+      {/* =========================
+          FOOTER
+      ========================== */}
+      <footer id="contact" className="footer">
+        <div className="container footer-grid">
+          <div>
+            <a className="brand" href="/">
+              <span className="brand-mark">♧</span>
+              WHOLEGACY
+            </a>
+
+            <p style={{ marginTop: "16px" }}>
+              Your private digital legacy for the stories, documents,
+              memories, and values that matter most.
+            </p>
           </div>
 
           <div>
-            <span>
-              © {new Date().getFullYear()} WHOLEGACY
-            </span>
+            <h4>Explore</h4>
+
+            <a href="/digital-legacy">Digital Legacy</a>
+
+            <a href="/private-document-storage">
+              Private Documents
+            </a>
+
+            <a href="/memory-vault">Memory Vault</a>
+
+            <a href="/family-archive">Family Archive</a>
+
+            <a href="/life-story">Life Story</a>
+
+            <a href="/digital-inheritance">
+              Digital Inheritance
+            </a>
           </div>
 
+          <div>
+            <h4>Resources</h4>
+
+            <a href="/private-documents-and-memories">
+              Private Documents &amp; Memories
+            </a>
+
+            <a href="/faq">FAQ</a>
+
+            <a href="/security">Security &amp; Privacy</a>
+
+            <a href="/about">About WHOLEGACY</a>
+          </div>
+
+          <div>
+            <h4>Legal</h4>
+
+            <a href="/privacy">Privacy Policy</a>
+
+            <a href="/terms">Terms of Service</a>
+          </div>
+
+          <div>
+            <h4>Follow us</h4>
+
+            <div className="socials">
+              <span>◎</span>
+              <span>f</span>
+              <span>𝕏</span>
+              <span>in</span>
+            </div>
+
+            <p className="copyright">
+              © 2026 WHOLEGACY. All rights reserved.
+            </p>
+          </div>
         </div>
-
       </footer>
-
     </main>
   );
 }
