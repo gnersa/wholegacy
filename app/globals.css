@@ -1365,7 +1365,16 @@ h2 { font-size: clamp(38px, 4vw, 54px); line-height: 1.08; margin: 0 0 20px; let
   font-size: 11px;
   font-weight: 700;
 }
-
+.wl-brand-img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+}
+.wl-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 .wl-nav-links {
   display: flex;
   align-items: center;
