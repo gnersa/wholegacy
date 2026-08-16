@@ -2858,7 +2858,7 @@ h2 { font-size: clamp(38px, 4vw, 54px); line-height: 1.08; margin: 0 0 20px; let
 
 .legacy-explore,
 .how-it-works,
-.why-wholelegacy {
+.why-wholegacy {
   padding: 100px 24px;
 }
 
@@ -3035,7 +3035,7 @@ h2 { font-size: clamp(38px, 4vw, 54px); line-height: 1.08; margin: 0 0 20px; let
 @media (max-width: 600px) {
   .legacy-explore,
   .how-it-works,
-  .why-wholelegacy {
+  .why-wholegacy {
     padding: 70px 20px;
   }
 
