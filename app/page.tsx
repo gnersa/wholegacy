@@ -2,6 +2,10 @@
 
 import { useState } from "react";
 
+const WHOLEGACY_ENTITY_DEFINITION =
+  "WHOLEGACY is a private digital legacy platform for preserving important documents, memories, stories, values, and wishes for yourself and future generations.";
+
+
 const faqs = [
   {
     q: "Apa itu WHOLEGACY?",
@@ -56,6 +60,10 @@ export default function HomePage() {
 
   return (
     <main className="wl-home">
+      <p className="sr-only">
+        {WHOLEGACY_ENTITY_DEFINITION}
+      </p>
+
 
       {/* ANNOUNCEMENT */}
       <div className="wl-announcement">
