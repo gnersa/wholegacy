@@ -112,7 +112,7 @@ icons: {
     locale: "en_US",
     images: [
       {
-        url: "/og/og_default_dark.jpg",
+        url: "/og/og_light.png",
         width: 1200,
         height: 630,
         alt: "WHOLEGACY — Private Digital Legacy",
@@ -126,7 +126,7 @@ icons: {
       "WHOLEGACY — Private Digital Legacy for Stories, Memories & Documents",
     description:
       "A private digital legacy platform for preserving stories, memories, important documents, family history, values, messages, and wishes.",
-    images: ["/og/og_default_dark.jpg"],
+    images: ["/og/og_light.png"],
   },
 
   category: "Lifestyle",
