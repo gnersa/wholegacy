@@ -168,7 +168,7 @@ export default function RootLayout({
           }}
         >
           <a
-            href="//www.dmca.com/Protection/Status.aspx?ID=d9e040d4-b3d6-4992-a83c-070c01540141"
+            href="https://www.dmca.com/Protection/Status.aspx?id=d9e040d4-b3d6-4992-a83c-070c01540141&refurl=https%3a%2f%2fwholegacy.com%2f&rlo=true"
             title="DMCA.com Protection Status"
             className="dmca-badge"
           >
