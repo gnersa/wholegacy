@@ -152,10 +152,7 @@ export default function RootLayout({
 
         {/* 2. PENEMPATAN BADGE DMCA */}
         <div style={{ textAlign: "center", padding: "20px 0" }}>
-        <a 
-        href="//www.dmca.com/Protection/Status.aspx?ID=d9e040d4-b3d6-4992-a83c-070c01540141" title="DMCA.com Protection Status" class="dmca-badge">
-        <img src ="https://images.dmca.com/Badges/dmca_protected_27_120.png?ID=d9e040d4-b3d6-4992-a83c-070c01540141"  alt="DMCA.com Protection Status" />
-        </a>
+        <a href="//www.dmca.com/Protection/Status.aspx?ID=d9e040d4-b3d6-4992-a83c-070c01540141" title="DMCA.com Protection Status" class="dmca-badge"> <img src ="https://images.dmca.com/Badges/dmca_protected_27_120.png?ID=d9e040d4-b3d6-4992-a83c-070c01540141"  alt="DMCA.com Protection Status" /></a>  <script src="https://images.dmca.com/Badges/DMCABadgeHelper.min.js"> </script>
       
         </div>
 
