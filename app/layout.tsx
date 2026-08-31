@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Script from "next/script"; // 1. Import komponen Script dari Next.js
+import Script from "next/script";
 import "./globals.css";
 
 const SITE_URL = "https://wholegacy.com";
@@ -95,8 +95,16 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       { url: "/favicon.ico" },
-      { url: "/favicon_32.png", sizes: "32x32", type: "image/png" },
-      { url: "/favicon_512.png", sizes: "512x512", type: "image/png" },
+      {
+        url: "/favicon_32.png",
+        sizes: "32x32",
+        type: "image/png",
+      },
+      {
+        url: "/favicon_512.png",
+        sizes: "512x512",
+        type: "image/png",
+      },
     ],
     apple: "/favicon_512.png",
     shortcut: "/favicon.ico",
@@ -141,28 +149,37 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
+        {/* WHOLEGACY Structured Data */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify(whoLegacyJsonLd),
           }}
         />
-        
+
+        {/* Main Application */}
         {children}
 
-        {/* 2. PENEMPATAN BADGE DMCA */}
-        <div style={{ textAlign: "center", padding: "20px 0" }}>
-         <a
+        {/* DMCA Protection Badge */}
+        <div
+          style={{
+            textAlign: "center",
+            padding: "20px 0",
+          }}
+        >
+          <a
             href="//www.dmca.com/Protection/Status.aspx?ID=d9e040d4-b3d6-4992-a83c-070c01540141"
-            title="DMCA.com Protection Status" class="dmca-badge">
-
+            title="DMCA.com Protection Status"
+            className="dmca-badge"
+          >
             <img
               src="https://images.dmca.com/Badges/dmca_protected_27_120.png?ID=d9e040d4-b3d6-4992-a83c-070c01540141"
               alt="DMCA.com Protection Status"
             />
           </a>
+        </div>
 
-        {/* 3. PENEMPATAN SCRIPT DMCA */}
+        {/* DMCA Badge Helper Script */}
         <Script
           src="https://images.dmca.com/Badges/DMCABadgeHelper.min.js"
           strategy="lazyOnload"
