@@ -4,7 +4,7 @@ import {
   cleanupExpiredWebchatData,
   ensureWebchatTables,
   webchatSql,
-} from "@/lib/webchat-db";
+} from "../../../../lib/webchat-db";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
