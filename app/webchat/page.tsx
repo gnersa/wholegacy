@@ -96,7 +96,13 @@ const MAX_FILE_SIZE =
   10 * 1024 * 1024;
 
 const FILE_CHUNK_BYTES =
-  128 * 1024;
+  48 * 1024;
+
+const FILE_CHUNK_P2P_DELAY_MS =
+  18;
+
+const FILE_CHUNK_RELAY_DELAY_MS =
+  4;
 
 const P2P_TIMEOUT_MS =
   12000;
@@ -174,6 +180,18 @@ function getTime() {
       minute:
         "2-digit",
     }
+  );
+}
+
+function sleep(
+  ms: number
+) {
+  return new Promise<void>(
+    (resolve) =>
+      setTimeout(
+        resolve,
+        ms
+      )
   );
 }
 
@@ -542,6 +560,12 @@ export default function WebChatPage() {
     useState("");
 
   const [
+    expectedPinLength,
+    setExpectedPinLength,
+  ] =
+    useState<number | null>(null);
+
+  const [
     connected,
     setConnected,
   ] =
@@ -586,6 +610,18 @@ export default function WebChatPage() {
     useState<
       SharedFile[]
     >([]);
+
+  const [
+    cameraOpen,
+    setCameraOpen,
+  ] =
+    useState(false);
+
+  const [
+    cameraBusy,
+    setCameraBusy,
+  ] =
+    useState(false);
 
   /*
    * =======================================================
@@ -672,6 +708,21 @@ export default function WebChatPage() {
   const cameraInputRef =
     useRef<
       HTMLInputElement | null
+    >(null);
+
+  const messagesEndRef =
+    useRef<
+      HTMLDivElement | null
+    >(null);
+
+  const cameraVideoRef =
+    useRef<
+      HTMLVideoElement | null
+    >(null);
+
+  const cameraStreamRef =
+    useRef<
+      MediaStream | null
     >(null);
 
   const objectUrlsRef =
@@ -892,6 +943,13 @@ export default function WebChatPage() {
             hash.get(
               "t"
             ) || "",
+
+          pinLength:
+            Number(
+              hash.get(
+                "l"
+              )
+            ) || null,
         };
       },
       []
@@ -917,6 +975,16 @@ export default function WebChatPage() {
 
         relayTokenRef.current =
           invitation.token;
+
+        if (
+          invitation.pinLength &&
+          invitation.pinLength >= 4 &&
+          invitation.pinLength <= 6
+        ) {
+          setExpectedPinLength(
+            invitation.pinLength
+          );
+        }
 
         setMode(
           "join"
@@ -2221,14 +2289,19 @@ export default function WebChatPage() {
    */
 
   const verifyPinAndJoin =
-    async () => {
+    async (
+      pinOverride?: string
+    ) => {
       const cleanRoom =
         joinRoom
           .trim()
           .toUpperCase();
 
       const cleanPin =
-        joinPin.trim();
+        (
+          pinOverride ??
+          joinPin
+        ).trim();
 
       const secret =
         roomSecretRef.current;
@@ -2752,6 +2825,19 @@ export default function WebChatPage() {
                 ),
             }
           );
+
+          /*
+           * WebRTC DataChannels can become unstable when a multi-megabyte
+           * camera photo is pushed as a burst. Pace chunks so the SCTP
+           * send buffer has time to drain. Relay also gets a tiny pause
+           * to avoid flooding server requests.
+           */
+          await sleep(
+            transportRef.current ===
+              "p2p"
+              ? FILE_CHUNK_P2P_DELAY_MS
+              : FILE_CHUNK_RELAY_DELAY_MS
+          );
         }
 
         /*
@@ -2802,6 +2888,267 @@ export default function WebChatPage() {
 
   /*
    * =======================================================
+   * CAMERA CAPTURE
+   * =======================================================
+   */
+
+  const closeCamera =
+    useCallback(
+      () => {
+        cameraStreamRef.current?.getTracks().forEach(
+          (track) => track.stop()
+        );
+
+        cameraStreamRef.current =
+          null;
+
+        if (
+          cameraVideoRef.current
+        ) {
+          cameraVideoRef.current.srcObject =
+            null;
+        }
+
+        setCameraOpen(
+          false
+        );
+
+        setCameraBusy(
+          false
+        );
+      },
+      []
+    );
+
+  const openCamera =
+    useCallback(
+      async () => {
+        if (
+          !connected
+        ) {
+          return;
+        }
+
+        if (
+          !navigator.mediaDevices?.getUserMedia
+        ) {
+          cameraInputRef.current?.click();
+          return;
+        }
+
+        setCameraBusy(
+          true
+        );
+
+        try {
+          cameraStreamRef.current?.getTracks().forEach(
+            (track) => track.stop()
+          );
+
+          const stream =
+            await navigator.mediaDevices.getUserMedia(
+              {
+                video: {
+                  facingMode: {
+                    ideal: "environment",
+                  },
+                  width: {
+                    ideal: 1920,
+                  },
+                  height: {
+                    ideal: 1080,
+                  },
+                },
+                audio: false,
+              }
+            );
+
+          cameraStreamRef.current =
+            stream;
+
+          setCameraOpen(
+            true
+          );
+
+          requestAnimationFrame(
+            async () => {
+              const video =
+                cameraVideoRef.current;
+
+              if (
+                !video
+              ) {
+                return;
+              }
+
+              video.srcObject =
+                stream;
+
+              try {
+                await video.play();
+              } catch {
+                // Mobile Safari may start playback automatically after metadata loads.
+              }
+            }
+          );
+        } catch {
+          addSystem(
+            "Camera permission was unavailable. You can still choose a photo from your device."
+          );
+
+          cameraInputRef.current?.click();
+        } finally {
+          setCameraBusy(
+            false
+          );
+        }
+      },
+      [
+        addSystem,
+        connected,
+      ]
+    );
+
+  const captureCameraPhoto =
+    useCallback(
+      async () => {
+        const video =
+          cameraVideoRef.current;
+
+        if (
+          !video ||
+          video.videoWidth <= 0 ||
+          video.videoHeight <= 0
+        ) {
+          addSystem(
+            "Camera is not ready yet."
+          );
+          return;
+        }
+
+        setCameraBusy(
+          true
+        );
+
+        try {
+          const maxDimension =
+            1600;
+
+          const scale =
+            Math.min(
+              1,
+              maxDimension /
+                Math.max(
+                  video.videoWidth,
+                  video.videoHeight
+                )
+            );
+
+          const width =
+            Math.max(
+              1,
+              Math.round(
+                video.videoWidth *
+                  scale
+              )
+            );
+
+          const height =
+            Math.max(
+              1,
+              Math.round(
+                video.videoHeight *
+                  scale
+              )
+            );
+
+          const canvas =
+            document.createElement(
+              "canvas"
+            );
+
+          canvas.width =
+            width;
+
+          canvas.height =
+            height;
+
+          const context =
+            canvas.getContext(
+              "2d"
+            );
+
+          if (
+            !context
+          ) {
+            throw new Error(
+              "Canvas unavailable"
+            );
+          }
+
+          context.drawImage(
+            video,
+            0,
+            0,
+            width,
+            height
+          );
+
+          /*
+           * Release camera hardware before JPEG encoding and upload.
+           * This reduces memory / GPU pressure on mobile browsers.
+           */
+          closeCamera();
+
+          const blob =
+            await new Promise<Blob | null>(
+              (resolve) =>
+                canvas.toBlob(
+                  resolve,
+                  "image/jpeg",
+                  0.78
+                )
+            );
+
+          if (
+            !blob
+          ) {
+            throw new Error(
+              "Photo capture failed"
+            );
+          }
+
+          const file =
+            new File(
+              [blob],
+              `camera-${Date.now()}.jpg`,
+              {
+                type: "image/jpeg",
+                lastModified: Date.now(),
+              }
+            );
+
+          await sendFile(
+            file
+          );
+        } catch {
+          addSystem(
+            "Camera photo could not be attached."
+          );
+          setCameraBusy(
+            false
+          );
+        }
+      },
+      [
+        addSystem,
+        closeCamera,
+        sendFile,
+      ]
+    );
+
+  /*
+   * =======================================================
    * PIN KEYPAD
    * =======================================================
    */
@@ -2816,23 +3163,34 @@ export default function WebChatPage() {
         return;
       }
 
-      setJoinPin(
+      const nextPin =
         (
-          current
-        ) => {
-          if (
-            current.length >=
-            6
-          ) {
-            return current;
-          }
+          joinPin +
+          digit
+        ).slice(
+          0,
+          6
+        );
 
-          return (
-            current +
-            digit
-          );
-        }
+      setJoinPin(
+        nextPin
       );
+
+      /*
+       * New invite links carry only the PIN length
+       * inside the URL fragment, never the PIN itself.
+       * Once the last digit is entered, verify and open
+       * the room automatically.
+       */
+      if (
+        expectedPinLength &&
+        nextPin.length ===
+          expectedPinLength
+      ) {
+        void verifyPinAndJoin(
+          nextPin
+        );
+      }
     };
 
   const deletePin =
@@ -2883,7 +3241,7 @@ export default function WebChatPage() {
           roomSecretRef.current
         )}&t=${encodeURIComponent(
           relayTokenRef.current
-        )}`
+        )}&l=${pin.length}`
       : "";
 
   /*
@@ -2973,6 +3331,8 @@ export default function WebChatPage() {
 
       const currentToken =
         relayTokenRef.current;
+
+      closeCamera();
 
       clearConnectionTimers();
 
@@ -3066,6 +3426,10 @@ export default function WebChatPage() {
 
       setJoinRoom("");
 
+      setExpectedPinLength(
+        null
+      );
+
       setConnected(
         false
       );
@@ -3094,6 +3458,47 @@ export default function WebChatPage() {
 
   /*
    * =======================================================
+   * AUTO-SCROLL NEW MESSAGES / FILES
+   * =======================================================
+   */
+
+  useEffect(
+    () => {
+      if (
+        !connected
+      ) {
+        return;
+      }
+
+      const frame =
+        requestAnimationFrame(
+          () => {
+            messagesEndRef.current?.scrollIntoView(
+              {
+                behavior:
+                  "smooth",
+
+                block:
+                  "end",
+              }
+            );
+          }
+        );
+
+      return () =>
+        cancelAnimationFrame(
+          frame
+        );
+    },
+    [
+      connected,
+      messages,
+      files,
+    ]
+  );
+
+  /*
+   * =======================================================
    * UNMOUNT CLEANUP
    * =======================================================
    */
@@ -3101,6 +3506,11 @@ export default function WebChatPage() {
   useEffect(
     () => {
       return () => {
+        cameraStreamRef.current?.getTracks().forEach(
+          (track) => track.stop()
+        );
+        cameraStreamRef.current = null;
+
         clearConnectionTimers();
 
         stopRelayPolling();
@@ -3809,6 +4219,12 @@ export default function WebChatPage() {
             )
           )}
 
+          <div
+            ref={messagesEndRef}
+            aria-hidden="true"
+            className={styles.scrollAnchor}
+          />
+
         </section>
 
         <input
@@ -3859,6 +4275,67 @@ export default function WebChatPage() {
           }}
         />
 
+        {cameraOpen && (
+          <div
+            className={
+              styles.cameraOverlay
+            }
+            role="dialog"
+            aria-modal="true"
+            aria-label="Camera"
+          >
+            <div
+              className={
+                styles.cameraPanel
+              }
+            >
+              <video
+                ref={
+                  cameraVideoRef
+                }
+                className={
+                  styles.cameraVideo
+                }
+                autoPlay
+                muted
+                playsInline
+              />
+
+              <div
+                className={
+                  styles.cameraActions
+                }
+              >
+                <button
+                  type="button"
+                  onClick={
+                    closeCamera
+                  }
+                  disabled={
+                    cameraBusy
+                  }
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    void captureCameraPhoto();
+                  }}
+                  disabled={
+                    cameraBusy
+                  }
+                >
+                  {cameraBusy
+                    ? "Saving…"
+                    : "Take photo"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <form
           className="p2p-composer"
           onSubmit={(event) => {
@@ -3883,18 +4360,26 @@ export default function WebChatPage() {
 
           <button
             type="button"
-            onClick={() =>
-              cameraInputRef.current?.click()
-            }
+            onClick={() => {
+              void openCamera();
+            }}
             disabled={
-              !connected
+              !connected ||
+              cameraBusy
             }
             title="Take photo"
           >
-            Camera
+            {cameraBusy
+              ? "Opening…"
+              : "Camera"}
           </button>
 
           <input
+            type="text"
+            inputMode="text"
+            enterKeyHint="send"
+            autoComplete="off"
+            autoCapitalize="sentences"
             value={
               draft
             }

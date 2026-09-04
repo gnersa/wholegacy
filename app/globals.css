@@ -3745,3 +3745,237 @@ h2 { font-size: clamp(38px, 4vw, 54px); line-height: 1.08; margin: 0 0 20px; let
     height: 68px;
   }
 }
+
+
+/* =========================================================
+   WHOLEGACY WEBCHAT V7 MOBILE OPTIMIZATION
+   ========================================================= */
+
+.p2p-chat-shell {
+  height: 100dvh;
+  min-height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+}
+
+.p2p-chat-header {
+  flex: 0 0 auto;
+  padding-top: max(16px, env(safe-area-inset-top));
+  background: #fbfaf7;
+}
+
+.p2p-messages {
+  flex: 1 1 auto;
+  min-height: 0;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  overflow-anchor: auto;
+}
+
+.p2p-message > div {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.p2p-composer {
+  flex: 0 0 auto;
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+  align-items: center;
+  background: #fbfaf7;
+  padding-bottom: max(14px, env(safe-area-inset-bottom));
+}
+
+.p2p-composer input {
+  min-width: 0;
+  min-height: 48px;
+  box-sizing: border-box;
+  font-size: 16px;
+  line-height: 1.3;
+  border-radius: 0;
+}
+
+.p2p-composer button {
+  min-width: 48px;
+  min-height: 48px;
+  padding: 0 16px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.p2p-leave,
+.p2p-invite-actions button,
+.p2p-choice,
+.p2p-back {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (max-width: 700px) {
+  .p2p-page {
+    min-height: 100dvh;
+  }
+
+  .p2p-chat-shell {
+    width: 100%;
+    height: 100dvh;
+    min-height: 100dvh;
+    max-height: 100dvh;
+    box-shadow: none;
+  }
+
+  .p2p-chat-header {
+    min-height: 64px;
+    padding-left: 14px;
+    padding-right: 14px;
+    padding-bottom: 12px;
+  }
+
+  .p2p-mini-brand {
+    font-size: 9px;
+  }
+
+  .p2p-room-line {
+    margin-top: 5px;
+    font-size: 9px;
+    letter-spacing: .08em;
+    white-space: normal;
+  }
+
+  .p2p-room-line span {
+    display: inline-block;
+    margin-left: 8px;
+  }
+
+  .p2p-leave {
+    min-width: 58px;
+    min-height: 44px;
+    padding: 0 12px;
+  }
+
+  .p2p-invite {
+    flex: 0 0 auto;
+    margin: 10px;
+    padding: 12px;
+    gap: 12px;
+    max-height: 32dvh;
+    overflow: auto;
+  }
+
+  .p2p-invite code {
+    max-width: 100%;
+    font-size: 9px;
+  }
+
+  .p2p-invite-actions {
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .p2p-invite-actions button {
+    min-height: 44px;
+    flex: 1 1 auto;
+  }
+
+  .p2p-password {
+    min-width: 72px;
+    text-align: left;
+  }
+
+  .p2p-messages {
+    min-height: 0;
+    padding: 14px 12px 18px;
+  }
+
+  .p2p-empty {
+    height: 100%;
+    min-height: 260px;
+    padding: 24px 10px;
+    box-sizing: border-box;
+  }
+
+  .p2p-message {
+    max-width: 88%;
+    margin: 6px 0;
+  }
+
+  .p2p-message > div {
+    padding: 10px 12px;
+    font-size: 14px;
+    line-height: 1.45;
+  }
+
+  .p2p-composer {
+    gap: 6px;
+    padding: 8px 8px max(8px, env(safe-area-inset-bottom));
+    border-top: 1px solid #dedbd5;
+  }
+
+  .p2p-composer input {
+    min-height: 46px;
+    padding: 11px 12px;
+    font-size: 16px;
+  }
+
+  .p2p-composer button {
+    min-width: 46px;
+    min-height: 46px;
+    padding: 0 10px;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+
+  .p2p-composer button:first-child {
+    width: 46px;
+    padding: 0;
+    font-size: 20px;
+  }
+}
+
+@media (max-width: 430px) {
+  .p2p-chat-header {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .p2p-mini-brand span {
+    display: none;
+  }
+
+  .p2p-room-line strong {
+    margin-left: 3px;
+  }
+
+  .p2p-room-line span {
+    display: block;
+    margin: 3px 0 0;
+  }
+
+  .p2p-invite {
+    margin: 8px;
+  }
+
+  .p2p-composer {
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+
+  .p2p-composer button {
+    padding: 0 8px;
+  }
+
+  .p2p-composer button[title="Take photo"] {
+    min-width: 58px;
+  }
+}
+
+/* Fallback for browsers without dynamic viewport units. */
+@supports not (height: 100dvh) {
+  .p2p-chat-shell {
+    height: 100vh;
+    min-height: 100vh;
+    max-height: 100vh;
+  }
+}
