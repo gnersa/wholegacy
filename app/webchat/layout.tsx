@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 
 export const metadata: Metadata = {
   title:
@@ -40,3 +41,11 @@ export const metadata: Metadata = {
       "Create a private chat room in seconds. No account, no sign-up. Secure private chat with P2P and encrypted relay fallback.",
   },
 };
+
+export default function WebchatLayout({
+  children,
+}: Readonly<{
+  children: ReactNode;
+}>) {
+  return children;
+}
