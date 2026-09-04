@@ -7,11 +7,12 @@ import {
   useRef,
   useState,
 } from "react";
-
+import styles from "./page.module.css";
 import type Peer from "peerjs";
 import type { DataConnection } from "peerjs";
 
 type Mode = "choose" | "host" | "join";
+type Transport = "none" | "p2p" | "relay";
 
 type ChatMessage = {
   id: string;
@@ -30,2427 +31,1436 @@ type SharedFile = {
   time: string;
 };
 
-const ALPHABET =
-  "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+type RelayPayload =
+  | { type: "control"; action: "relay-hello" | "relay-ack"; from: string }
+  | { type: "chat"; id: string; text: string; time: string }
+  | {
+      type: "file-meta";
+      fileId: string;
+      name: string;
+      mime: string;
+      size: number;
+      totalChunks: number;
+      time: string;
+    }
+  | {
+      type: "file-chunk";
+      fileId: string;
+      index: number;
+      totalChunks: number;
+      data: string;
+    };
 
-const MAX_FILE_SIZE =
-  10 * 1024 * 1024;
+type IncomingFileState = {
+  name: string;
+  mime: string;
+  size: number;
+  totalChunks: number;
+  time: string;
+  chunks: Map<number, Uint8Array>;
+};
+
+const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const FILE_CHUNK_BYTES = 128 * 1024;
+const P2P_TIMEOUT_MS = 12000;
+const RELAY_POLL_MS = 1200;
 
 const PEER_OPTIONS = {
-  debug: 2,
-
+  debug: 1,
   config: {
     iceServers: [
-      {
-        urls:
-          "stun:stun.l.google.com:19302",
-      },
-      {
-        urls:
-          "stun:stun1.l.google.com:19302",
-      },
-
-      /*
-       * ==================================================
-       * TURN SERVER
-       * ==================================================
-       *
-       * Untuk koneksi lintas jaringan yang stabil,
-       * tambahkan TURN server di sini.
-       *
-       * Contoh:
-       *
-       * {
-       *   urls: "turn:turn.wholegacy.com:3478",
-       *   username: "TEMP_USERNAME",
-       *   credential: "TEMP_PASSWORD",
-       * },
-       *
-       * {
-       *   urls:
-       *     "turn:turn.wholegacy.com:3478?transport=tcp",
-       *   username: "TEMP_USERNAME",
-       *   credential: "TEMP_PASSWORD",
-       * },
-       */
+      { urls: "stun:stun.l.google.com:19302" },
+      { urls: "stun:stun1.l.google.com:19302" },
     ],
   },
 };
 
-function randomString(
-  length: number
-) {
-  const bytes =
-    new Uint8Array(length);
-
+function randomString(length: number) {
+  const bytes = new Uint8Array(length);
   crypto.getRandomValues(bytes);
-
   return Array.from(
     bytes,
-    (byte) =>
-      ALPHABET[
-        byte %
-          ALPHABET.length
-      ]
+    (byte) => ALPHABET[byte % ALPHABET.length]
   ).join("");
 }
 
+function randomToken(bytesLength = 32) {
+  const bytes = new Uint8Array(bytesLength);
+  crypto.getRandomValues(bytes);
+  return bytesToBase64Url(bytes);
+}
+
 function getTime() {
-  return new Date().toLocaleTimeString(
-    [],
+  return new Date().toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function bytesToBase64(bytes: Uint8Array) {
+  let binary = "";
+  const step = 0x8000;
+  for (let i = 0; i < bytes.length; i += step) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + step));
+  }
+  return btoa(binary);
+}
+
+function base64ToBytes(value: string) {
+  const binary = atob(value);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}
+
+function bytesToBase64Url(bytes: Uint8Array) {
+  return bytesToBase64(bytes)
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
+}
+
+function base64UrlToBytes(value: string) {
+  const padded = value.replace(/-/g, "+").replace(/_/g, "/");
+  const withPadding = padded + "=".repeat((4 - (padded.length % 4)) % 4);
+  return base64ToBytes(withPadding);
+}
+
+async function deriveRoomKey(
+  roomId: string,
+  secret: string,
+  pin: string
+) {
+  const secretBytes = base64UrlToBytes(secret);
+  const material = await crypto.subtle.importKey(
+    "raw",
+    secretBytes,
+    "HKDF",
+    false,
+    ["deriveKey"]
+  );
+
+  const salt = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(roomId)
+  );
+
+  return crypto.subtle.deriveKey(
     {
-      hour: "2-digit",
-      minute: "2-digit",
-    }
+      name: "HKDF",
+      hash: "SHA-256",
+      salt,
+      info: new TextEncoder().encode(
+        `wholegacy-webchat-v1|pin:${pin}`
+      ),
+    },
+    material,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["encrypt", "decrypt"]
   );
 }
 
-export default function WebChatPage() {
-  /*
-   * ======================================================
-   * STATE
-   * ======================================================
-   */
-
-  const [
-    mode,
-    setMode,
-  ] = useState<Mode>(
-    "choose"
+async function encryptJson(key: CryptoKey, value: unknown) {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const plaintext = new TextEncoder().encode(JSON.stringify(value));
+  const encrypted = await crypto.subtle.encrypt(
+    { name: "AES-GCM", iv },
+    key,
+    plaintext
   );
 
-  const [
-    roomId,
-    setRoomId,
-  ] = useState("");
+  return {
+    iv: bytesToBase64Url(iv),
+    ciphertext: bytesToBase64Url(new Uint8Array(encrypted)),
+  };
+}
 
-  const [
-    hostPeerId,
-    setHostPeerId,
-  ] = useState("");
+async function decryptJson<T>(
+  key: CryptoKey,
+  iv: string,
+  ciphertext: string
+): Promise<T> {
+  const decrypted = await crypto.subtle.decrypt(
+    {
+      name: "AES-GCM",
+      iv: base64UrlToBytes(iv),
+    },
+    key,
+    base64UrlToBytes(ciphertext)
+  );
 
-  /*
-   * Host PIN.
-   */
+  return JSON.parse(
+    new TextDecoder().decode(new Uint8Array(decrypted))
+  ) as T;
+}
 
-  const [
-    pin,
-    setPin,
-  ] = useState("");
+export default function WebChatPage() {
+  const [mode, setMode] = useState<Mode>("choose");
+  const [transport, setTransport] = useState<Transport>("none");
+  const [roomId, setRoomId] = useState("");
+  const [hostPeerId, setHostPeerId] = useState("");
+  const [pin, setPin] = useState("");
+  const [joinPin, setJoinPin] = useState("");
+  const [joinRoom, setJoinRoom] = useState("");
+  const [connected, setConnected] = useState(false);
+  const [connecting, setConnecting] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [copied, setCopied] = useState(false);
+  const [copiedPin, setCopiedPin] = useState(false);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [files, setFiles] = useState<SharedFile[]>([]);
 
-  /*
-   * Guest PIN.
-   */
+  const peerRef = useRef<Peer | null>(null);
+  const connectionRef = useRef<DataConnection | null>(null);
+  const roomIdRef = useRef("");
+  const pinRef = useRef("");
+  const roomSecretRef = useRef("");
+  const relayTokenRef = useRef("");
+  const cryptoKeyRef = useRef<CryptoKey | null>(null);
+  const transportRef = useRef<Transport>("none");
+  const clientIdRef = useRef(crypto.randomUUID());
+  const relayCursorRef = useRef(0);
+  const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pollEnabledRef = useRef(false);
+  const p2pTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const authTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const relayHandshakeTimeoutRef =
+    useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const cameraInputRef = useRef<HTMLInputElement | null>(null);
+  const objectUrlsRef = useRef<string[]>([]);
+  const incomingFilesRef = useRef<Map<string, IncomingFileState>>(new Map());
 
-  const [
-    joinPin,
-    setJoinPin,
-  ] = useState("");
+  const setTransportMode = useCallback((value: Transport) => {
+    transportRef.current = value;
+    setTransport(value);
+  }, []);
 
-  const [
-    joinRoom,
-    setJoinRoom,
-  ] = useState("");
+  const addSystem = useCallback((text: string) => {
+    setMessages((current) => [
+      ...current,
+      {
+        id: crypto.randomUUID(),
+        sender: "system",
+        text,
+        time: getTime(),
+      },
+    ]);
+  }, []);
 
-  const [
-    connected,
-    setConnected,
-  ] = useState(false);
+  const clearConnectionTimers = useCallback(() => {
+    if (p2pTimeoutRef.current) {
+      clearTimeout(p2pTimeoutRef.current);
+      p2pTimeoutRef.current = null;
+    }
+    if (authTimeoutRef.current) {
+      clearTimeout(authTimeoutRef.current);
+      authTimeoutRef.current = null;
+    }
+    if (relayHandshakeTimeoutRef.current) {
+      clearTimeout(relayHandshakeTimeoutRef.current);
+      relayHandshakeTimeoutRef.current = null;
+    }
+  }, []);
 
-  const [
-    connecting,
-    setConnecting,
-  ] = useState(false);
+  const stopRelayPolling = useCallback(() => {
+    pollEnabledRef.current = false;
+    if (pollTimerRef.current) {
+      clearTimeout(pollTimerRef.current);
+      pollTimerRef.current = null;
+    }
+  }, []);
 
-  const [
-    draft,
-    setDraft,
-  ] = useState("");
+  const revokeObjectUrls = useCallback(() => {
+    objectUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+    objectUrlsRef.current = [];
+  }, []);
 
-  const [
-    copied,
-    setCopied,
-  ] = useState(false);
+  const invitation = useMemo(() => {
+    if (typeof window === "undefined") return null;
 
-  const [
-    copiedPin,
-    setCopiedPin,
-  ] = useState(false);
-
-  const [
-    messages,
-    setMessages,
-  ] = useState<
-    ChatMessage[]
-  >([]);
-
-  const [
-    files,
-    setFiles,
-  ] = useState<
-    SharedFile[]
-  >([]);
-
-  /*
-   * ======================================================
-   * REFS
-   * ======================================================
-   */
-
-  const peerRef =
-    useRef<Peer | null>(
-      null
+    const query = new URLSearchParams(window.location.search);
+    const hash = new URLSearchParams(
+      window.location.hash.replace(/^#/, "")
     );
 
-  const connectionRef =
-    useRef<
-      DataConnection | null
-    >(null);
-
-  const roomIdRef =
-    useRef("");
-
-  const pinRef =
-    useRef("");
-
-  const roleRef =
-    useRef<
-      "host" |
-      "guest" |
-      null
-    >(null);
-
-  const connectTimeoutRef =
-    useRef<
-      ReturnType<
-        typeof setTimeout
-      > | null
-    >(null);
-
-  const authTimeoutRef =
-    useRef<
-      ReturnType<
-        typeof setTimeout
-      > | null
-    >(null);
-
-  const fileInputRef =
-    useRef<
-      HTMLInputElement | null
-    >(null);
-
-  const cameraInputRef =
-    useRef<
-      HTMLInputElement | null
-    >(null);
-
-  /*
-   * Store object URLs so cleanup
-   * does not need to depend on files state.
-   */
-
-  const objectUrlsRef =
-    useRef<string[]>([]);
-
-  /*
-   * ======================================================
-   * INVITATION QUERY
-   * ======================================================
-   */
-
-  const query =
-    useMemo(() => {
-      if (
-        typeof window ===
-        "undefined"
-      ) {
-        return null;
-      }
-
-      return new URLSearchParams(
-        window.location.search
-      );
-    }, []);
+    return {
+      room: (query.get("room") || "").toUpperCase(),
+      peer: query.get("peer") || "",
+      secret: hash.get("s") || "",
+      token: hash.get("t") || "",
+    };
+  }, []);
 
   useEffect(() => {
-    const queryRoom =
-      query?.get("room") ||
-      "";
-
-    const queryPeer =
-      query?.get("peer") ||
-      "";
-
     if (
-      queryRoom &&
-      queryPeer
+      invitation?.room &&
+      invitation?.secret &&
+      invitation?.token
     ) {
-      setJoinRoom(
-        queryRoom.toUpperCase()
-      );
-
-      setHostPeerId(
-        queryPeer
-      );
-
-      setMode(
-        "join"
-      );
+      setJoinRoom(invitation.room);
+      setHostPeerId(invitation.peer);
+      roomSecretRef.current = invitation.secret;
+      relayTokenRef.current = invitation.token;
+      setMode("join");
     }
-  }, [query]);
+  }, [invitation]);
 
-  /*
-   * ======================================================
-   * SYSTEM MESSAGE
-   * ======================================================
-   */
+  const finishIncomingFile = useCallback((fileId: string) => {
+    const state = incomingFilesRef.current.get(fileId);
+    if (!state || state.chunks.size !== state.totalChunks) return;
 
-  const addSystem =
-    useCallback(
-      (text: string) => {
-        setMessages(
-          (current) => [
-            ...current,
+    const ordered: Uint8Array[] = [];
+    for (let i = 0; i < state.totalChunks; i += 1) {
+      const chunk = state.chunks.get(i);
+      if (!chunk) return;
+      ordered.push(chunk);
+    }
 
-            {
-              id:
-                crypto.randomUUID(),
+    const blob = new Blob(ordered, { type: state.mime });
+    const url = URL.createObjectURL(blob);
+    objectUrlsRef.current.push(url);
 
-              sender:
-                "system",
-
-              text,
-
-              time:
-                getTime(),
-            },
-          ]
-        );
+    setFiles((current) => [
+      ...current,
+      {
+        id: fileId,
+        name: state.name,
+        mime: state.mime,
+        size: state.size,
+        url,
+        sender: "peer",
+        time: state.time,
       },
-      []
-    );
+    ]);
 
-  /*
-   * ======================================================
-   * CLEAR TIMERS
-   * ======================================================
-   */
+    incomingFilesRef.current.delete(fileId);
+  }, []);
 
-  const clearTimers =
-    useCallback(() => {
-      if (
-        connectTimeoutRef.current
-      ) {
-        clearTimeout(
-          connectTimeoutRef.current
-        );
+  const sendRelayPayload = useCallback(async (payload: RelayPayload) => {
+    const key = cryptoKeyRef.current;
+    const room = roomIdRef.current;
+    const token = relayTokenRef.current;
 
-        connectTimeoutRef.current =
-          null;
-      }
+    if (!key || !room || !token) {
+      throw new Error("Relay encryption is not ready.");
+    }
 
-      if (
-        authTimeoutRef.current
-      ) {
-        clearTimeout(
-          authTimeoutRef.current
-        );
+    const encrypted = await encryptJson(key, payload);
 
-        authTimeoutRef.current =
-          null;
-      }
-    }, []);
+    const response = await fetch("/api/webchat/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        roomId: room,
+        token,
+        senderId: clientIdRef.current,
+        messageId: crypto.randomUUID(),
+        iv: encrypted.iv,
+        ciphertext: encrypted.ciphertext,
+      }),
+    });
 
-  /*
-   * ======================================================
-   * CLEAN OBJECT URL
-   * ======================================================
-   */
+    if (!response.ok) {
+      throw new Error("Relay send failed.");
+    }
+  }, []);
 
-  const revokeObjectUrls =
-    useCallback(() => {
-      objectUrlsRef.current.forEach(
-        (url) => {
-          URL.revokeObjectURL(
-            url
-          );
+  const handlePayload = useCallback(
+    async (payload: RelayPayload, via: "p2p" | "relay") => {
+      if (payload.type === "control") {
+        if (via !== "relay" || payload.from === clientIdRef.current) return;
+
+        if (payload.action === "relay-hello") {
+          setTransportMode("relay");
+          setConnected(true);
+          setConnecting(false);
+
+          if (relayHandshakeTimeoutRef.current) {
+            clearTimeout(relayHandshakeTimeoutRef.current);
+            relayHandshakeTimeoutRef.current = null;
+          }
+
+          connectionRef.current?.close();
+          connectionRef.current = null;
+
+          try {
+            await sendRelayPayload({
+              type: "control",
+              action: "relay-ack",
+              from: clientIdRef.current,
+            });
+          } catch {
+            // The next poll/send will surface a useful error if relay is unavailable.
+          }
+
+          addSystem("Connected through encrypted temporary relay.");
+          return;
         }
-      );
 
-      objectUrlsRef.current =
-        [];
-    }, []);
-
-  /*
-   * ======================================================
-   * ATTACH CONNECTION
-   * ======================================================
-   */
-
-  const attachConnection =
-    useCallback(
-      (
-        connection:
-          DataConnection,
-
-        role:
-          | "host"
-          | "guest",
-
-        guestRoom?: string,
-
-        guestPin?: string
-      ) => {
-        connectionRef.current =
-          connection;
-
-        /*
-         * WebRTC timeout.
-         */
-
-        connectTimeoutRef.current =
-          setTimeout(() => {
-            if (
-              !connection.open
-            ) {
-              connection.close();
-
-              setConnecting(
-                false
-              );
-
-              setConnected(
-                false
-              );
-
-              addSystem(
-                "Connection timed out. The browsers could not establish a private connection."
-              );
-            }
-          }, 15000);
-
-        /*
-         * ==================================================
-         * DATA CONNECTION OPEN
-         * ==================================================
-         */
-
-        connection.on(
-          "open",
-          () => {
-            if (
-              connectTimeoutRef.current
-            ) {
-              clearTimeout(
-                connectTimeoutRef.current
-              );
-
-              connectTimeoutRef.current =
-                null;
-            }
-
-            /*
-             * Guest sends PIN only after
-             * DataConnection is open.
-             */
-
-            if (
-              role ===
-              "guest"
-            ) {
-              connection.send({
-                type:
-                  "auth",
-
-                room:
-                  guestRoom?.toUpperCase() ||
-                  "",
-
-                pin:
-                  guestPin ||
-                  "",
-              });
-
-              addSystem(
-                "Private connection established. Verifying PIN…"
-              );
-
-              authTimeoutRef.current =
-                setTimeout(() => {
-                  setConnecting(
-                    false
-                  );
-
-                  addSystem(
-                    "PIN verification timed out."
-                  );
-                }, 10000);
-
-              return;
-            }
-
-            addSystem(
-              "Peer connected. Waiting for PIN verification…"
-            );
-          }
-        );
-
-        /*
-         * ==================================================
-         * RECEIVE DATA
-         * ==================================================
-         */
-
-        connection.on(
-          "data",
-          (raw) => {
-            const data =
-              raw as any;
-
-            /*
-             * ==============================================
-             * HOST AUTHENTICATION
-             * ==============================================
-             */
-
-            if (
-              role ===
-                "host" &&
-              data?.type ===
-                "auth"
-            ) {
-              const receivedRoom =
-                String(
-                  data.room ||
-                    ""
-                ).toUpperCase();
-
-              const receivedPin =
-                String(
-                  data.pin ||
-                    ""
-                );
-
-              const valid =
-                receivedRoom ===
-                  roomIdRef.current &&
-                receivedPin ===
-                  pinRef.current;
-
-              if (valid) {
-                connection.send({
-                  type:
-                    "auth-ok",
-                });
-
-                setConnected(
-                  true
-                );
-
-                setConnecting(
-                  false
-                );
-
-                addSystem(
-                  "The other person joined the private room."
-                );
-              } else {
-                connection.send({
-                  type:
-                    "auth-failed",
-                });
-
-                addSystem(
-                  "A connection attempt was rejected because the PIN was incorrect."
-                );
-
-                setTimeout(
-                  () => {
-                    connection.close();
-                  },
-                  300
-                );
-              }
-
-              return;
-            }
-
-            /*
-             * ==============================================
-             * GUEST AUTH SUCCESS
-             * ==============================================
-             */
-
-            if (
-              role ===
-                "guest" &&
-              data?.type ===
-                "auth-ok"
-            ) {
-              if (
-                authTimeoutRef.current
-              ) {
-                clearTimeout(
-                  authTimeoutRef.current
-                );
-
-                authTimeoutRef.current =
-                  null;
-              }
-
-              const currentRoom =
-                (
-                  guestRoom ||
-                  joinRoom
-                ).toUpperCase();
-
-              roomIdRef.current =
-                currentRoom;
-
-              setRoomId(
-                currentRoom
-              );
-
-              setConnected(
-                true
-              );
-
-              setConnecting(
-                false
-              );
-
-              setJoinPin(
-                ""
-              );
-
-              addSystem(
-                "PIN accepted. Private chat connected."
-              );
-
-              return;
-            }
-
-            /*
-             * ==============================================
-             * GUEST AUTH FAILED
-             * ==============================================
-             */
-
-            if (
-              role ===
-                "guest" &&
-              data?.type ===
-                "auth-failed"
-            ) {
-              if (
-                authTimeoutRef.current
-              ) {
-                clearTimeout(
-                  authTimeoutRef.current
-                );
-
-                authTimeoutRef.current =
-                  null;
-              }
-
-              setConnected(
-                false
-              );
-
-              setConnecting(
-                false
-              );
-
-              setJoinPin(
-                ""
-              );
-
-              addSystem(
-                "Incorrect PIN. Please try again."
-              );
-
-              setTimeout(
-                () => {
-                  connection.close();
-                },
-                250
-              );
-
-              return;
-            }
-
-            /*
-             * ==============================================
-             * TEXT CHAT
-             * ==============================================
-             */
-
-            if (
-              data?.type ===
-                "chat" &&
-              typeof data.text ===
-                "string"
-            ) {
-              setMessages(
-                (current) => [
-                  ...current,
-
-                  {
-                    id:
-                      data.id ||
-                      crypto.randomUUID(),
-
-                    sender:
-                      "peer",
-
-                    text:
-                      data.text,
-
-                    time:
-                      data.time ||
-                      getTime(),
-                  },
-                ]
-              );
-
-              return;
-            }
-
-            /*
-             * ==============================================
-             * FILE / PHOTO
-             * ==============================================
-             */
-
-            if (
-              data?.type ===
-                "file" &&
-              data.buffer
-            ) {
-              try {
-                const blob =
-                  new Blob(
-                    [
-                      data.buffer,
-                    ],
-                    {
-                      type:
-                        data.mime ||
-                        "application/octet-stream",
-                    }
-                  );
-
-                const url =
-                  URL.createObjectURL(
-                    blob
-                  );
-
-                objectUrlsRef.current.push(
-                  url
-                );
-
-                setFiles(
-                  (current) => [
-                    ...current,
-
-                    {
-                      id:
-                        data.id ||
-                        crypto.randomUUID(),
-
-                      name:
-                        data.name ||
-                        "file",
-
-                      mime:
-                        data.mime ||
-                        "application/octet-stream",
-
-                      size:
-                        data.size ||
-                        blob.size,
-
-                      url,
-
-                      sender:
-                        "peer",
-
-                      time:
-                        data.time ||
-                        getTime(),
-                    },
-                  ]
-                );
-              } catch {
-                addSystem(
-                  "Received file could not be opened."
-                );
-              }
-
-              return;
-            }
-          }
-        );
-
-        /*
-         * ==================================================
-         * ERROR
-         * ==================================================
-         */
-
-        connection.on(
-          "error",
-          () => {
-            clearTimers();
-
-            setConnecting(
-              false
-            );
-
-            setConnected(
-              false
-            );
-
-            addSystem(
-              "Peer-to-peer connection error."
-            );
-          }
-        );
-
-        /*
-         * ==================================================
-         * CLOSE
-         * ==================================================
-         */
-
-        connection.on(
-          "close",
-          () => {
-            clearTimers();
-
-            if (
-              connectionRef.current ===
-              connection
-            ) {
-              connectionRef.current =
-                null;
-            }
-
-            setConnecting(
-              false
-            );
-
-            setConnected(
-              false
-            );
-
-            /*
-             * Don't show Peer disconnected
-             * when authentication itself failed.
-             */
-          }
-        );
-      },
-      [
-        addSystem,
-        clearTimers,
-        joinRoom,
-      ]
-    );
-
-  /*
-   * ======================================================
-   * CREATE ROOM
-   * ======================================================
-   */
-
-  const createRoom =
-    async () => {
-      const cleanPin =
-        pin.trim();
-
-      if (
-        !/^\d{4,6}$/.test(
-          cleanPin
-        )
-      ) {
-        return;
-      }
-
-      peerRef.current?.destroy();
-
-      peerRef.current =
-        null;
-
-      connectionRef.current =
-        null;
-
-      clearTimers();
-
-      revokeObjectUrls();
-
-      setMessages([]);
-
-      setFiles([]);
-
-      setConnected(
-        false
-      );
-
-      setConnecting(
-        true
-      );
-
-      setHostPeerId(
-        ""
-      );
-
-      const newRoom =
-        randomString(8);
-
-      roomIdRef.current =
-        newRoom;
-
-      pinRef.current =
-        cleanPin;
-
-      roleRef.current =
-        "host";
-
-      setRoomId(
-        newRoom
-      );
-
-      setMode(
-        "host"
-      );
-
-      try {
-        const {
-          default: PeerJS,
-        } = await import(
-          "peerjs"
-        );
-
-        const peer =
-          new PeerJS(
-            PEER_OPTIONS
-          );
-
-        peerRef.current =
-          peer;
-
-        /*
-         * Incoming guest.
-         */
-
-        peer.on(
-          "connection",
-          (
-            connection:
-              DataConnection
-          ) => {
-            /*
-             * Only one active peer.
-             */
-
-            if (
-              connectionRef.current &&
-              connectionRef.current.open
-            ) {
-              connection.close();
-
-              return;
-            }
-
-            attachConnection(
-              connection,
-              "host"
-            );
-          }
-        );
-
-        /*
-         * Signaling ready.
-         */
-
-        peer.on(
-          "open",
-          (id) => {
-            setHostPeerId(
-              id
-            );
-
-            setConnecting(
-              false
-            );
-
-            addSystem(
-              "Private room ready. Share the link and PIN."
-            );
-          }
-        );
-
-        peer.on(
-          "error",
-          (error) => {
-            setConnecting(
-              false
-            );
-
-            if (
-              error.type ===
-              "network"
-            ) {
-              addSystem(
-                "Unable to connect to the signaling server."
-              );
-
-              return;
-            }
-
-            addSystem(
-              `Peer error: ${error.type}`
-            );
-          }
-        );
-      } catch {
-        setConnecting(
-          false
-        );
-
-        addSystem(
-          "Unable to initialize private room."
-        );
-      }
-    };
-
-  /*
-   * ======================================================
-   * JOIN ROOM
-   * ======================================================
-   */
-
-  const joinRoomNow =
-    async () => {
-      const cleanRoom =
-        joinRoom
-          .trim()
-          .toUpperCase();
-
-      const cleanPin =
-        joinPin.trim();
-
-      const cleanHostPeer =
-        hostPeerId.trim();
-
-      if (
-        !cleanRoom ||
-        !/^\d{4,6}$/.test(
-          cleanPin
-        ) ||
-        !cleanHostPeer
-      ) {
-        return;
-      }
-
-      peerRef.current?.destroy();
-
-      peerRef.current =
-        null;
-
-      connectionRef.current =
-        null;
-
-      clearTimers();
-
-      setConnecting(
-        true
-      );
-
-      setConnected(
-        false
-      );
-
-      roleRef.current =
-        "guest";
-
-      roomIdRef.current =
-        cleanRoom;
-
-      try {
-        const {
-          default: PeerJS,
-        } = await import(
-          "peerjs"
-        );
-
-        const peer =
-          new PeerJS(
-            PEER_OPTIONS
-          );
-
-        peerRef.current =
-          peer;
-
-        /*
-         * Guest signaling timeout.
-         */
-
-        const peerOpenTimeout =
-          setTimeout(() => {
-            if (
-              !peer.open
-            ) {
-              setConnecting(
-                false
-              );
-
-              addSystem(
-                "Could not reach the private room."
-              );
-
-              peer.destroy();
-            }
-          }, 12000);
-
-        peer.on(
-          "open",
-          () => {
-            clearTimeout(
-              peerOpenTimeout
-            );
-
-            const connection =
-              peer.connect(
-                cleanHostPeer,
-                {
-                  reliable:
-                    true,
-
-                  serialization:
-                    "json",
-                }
-              );
-
-            attachConnection(
-              connection,
-              "guest",
-              cleanRoom,
-              cleanPin
-            );
-          }
-        );
-
-        peer.on(
-          "error",
-          (error) => {
-            clearTimeout(
-              peerOpenTimeout
-            );
-
-            setConnecting(
-              false
-            );
-
-            setConnected(
-              false
-            );
-
-            switch (
-              error.type
-            ) {
-              case "peer-unavailable":
-                addSystem(
-                  "This private room is no longer available."
-                );
-                break;
-
-              case "network":
-                addSystem(
-                  "Unable to reach the signaling server."
-                );
-                break;
-
-              case "webrtc":
-                addSystem(
-                  "The browsers could not establish a private connection."
-                );
-                break;
-
-              default:
-                addSystem(
-                  `Connection error: ${error.type}`
-                );
-            }
-          }
-        );
-      } catch {
-        setConnecting(
-          false
-        );
-
-        addSystem(
-          "Unable to open private room."
-        );
-      }
-    };
-
-  /*
-   * ======================================================
-   * PIN KEYPAD
-   * ======================================================
-   */
-
-  const pressPin =
-    (
-      digit: string
-    ) => {
-      if (
-        connecting
-      ) {
-        return;
-      }
-
-      setJoinPin(
-        (current) => {
-          if (
-            current.length >=
-            6
-          ) {
-            return current;
+        if (payload.action === "relay-ack") {
+          setTransportMode("relay");
+          setConnected(true);
+          setConnecting(false);
+
+          if (relayHandshakeTimeoutRef.current) {
+            clearTimeout(relayHandshakeTimeoutRef.current);
+            relayHandshakeTimeoutRef.current = null;
           }
 
-          return (
-            current +
-            digit
-          );
+          connectionRef.current?.close();
+          connectionRef.current = null;
+          addSystem("Connected through encrypted temporary relay.");
         }
-      );
-    };
 
-  const deletePin =
-    () => {
-      if (
-        connecting
-      ) {
         return;
       }
 
-      setJoinPin(
-        (current) =>
-          current.slice(
-            0,
-            -1
-          )
-      );
-    };
-
-  /*
-   * ======================================================
-   * SEND MESSAGE
-   * ======================================================
-   */
-
-  const sendMessage =
-    () => {
-      const text =
-        draft.trim();
-
-      const connection =
-        connectionRef.current;
-
-      if (
-        !text ||
-        !connected ||
-        !connection ||
-        !connection.open
-      ) {
-        return;
-      }
-
-      const message = {
-        type:
-          "chat",
-
-        id:
-          crypto.randomUUID(),
-
-        text,
-
-        time:
-          getTime(),
-      };
-
-      connection.send(
-        message
-      );
-
-      setMessages(
-        (current) => [
+      if (payload.type === "chat") {
+        setMessages((current) => [
           ...current,
-
           {
-            id:
-              message.id,
-
-            sender:
-              "me",
-
-            text:
-              message.text,
-
-            time:
-              message.time,
+            id: payload.id,
+            sender: "peer",
+            text: payload.text,
+            time: payload.time,
           },
-        ]
-      );
-
-      setDraft("");
-    };
-
-  /*
-   * ======================================================
-   * SEND FILE / CAMERA PHOTO
-   * ======================================================
-   */
-
-  const sendFile =
-    async (
-      file: File
-    ) => {
-      const connection =
-        connectionRef.current;
-
-      if (
-        !connected ||
-        !connection ||
-        !connection.open
-      ) {
+        ]);
         return;
       }
 
-      if (
-        file.size >
-        MAX_FILE_SIZE
-      ) {
-        addSystem(
-          "Maximum file size is 10 MB."
-        );
-
+      if (payload.type === "file-meta") {
+        incomingFilesRef.current.set(payload.fileId, {
+          name: payload.name,
+          mime: payload.mime,
+          size: payload.size,
+          totalChunks: payload.totalChunks,
+          time: payload.time,
+          chunks: new Map(),
+        });
         return;
       }
+
+      if (payload.type === "file-chunk") {
+        const state = incomingFilesRef.current.get(payload.fileId);
+        if (!state) return;
+
+        state.chunks.set(payload.index, base64ToBytes(payload.data));
+        finishIncomingFile(payload.fileId);
+      }
+    },
+    [addSystem, finishIncomingFile, sendRelayPayload, setTransportMode]
+  );
+
+  const startRelayPolling = useCallback(() => {
+    stopRelayPolling();
+    pollEnabledRef.current = true;
+
+    const tick = async () => {
+      if (!pollEnabledRef.current) return;
 
       try {
-        const buffer =
-          await file.arrayBuffer();
+        const room = roomIdRef.current;
+        const token = relayTokenRef.current;
 
-        const id =
-          crypto.randomUUID();
+        if (!room || !token || !cryptoKeyRef.current) {
+          return;
+        }
 
-        const time =
-          getTime();
+        const response = await fetch(
+          `/api/webchat/messages?room=${encodeURIComponent(
+            room
+          )}&token=${encodeURIComponent(
+            token
+          )}&after=${relayCursorRef.current}`,
+          { cache: "no-store" }
+        );
 
-        const mime =
-          file.type ||
-          "application/octet-stream";
+        if (response.ok) {
+          const data = (await response.json()) as {
+            messages: Array<{
+              seq: number;
+              senderId: string;
+              iv: string;
+              ciphertext: string;
+            }>;
+          };
 
-        connection.send({
-          type:
-            "file",
+          for (const item of data.messages) {
+            relayCursorRef.current = Math.max(
+              relayCursorRef.current,
+              item.seq
+            );
 
-          id,
+            if (item.senderId === clientIdRef.current) continue;
 
-          name:
-            file.name,
+            try {
+              const payload = await decryptJson<RelayPayload>(
+                cryptoKeyRef.current!,
+                item.iv,
+                item.ciphertext
+              );
+              await handlePayload(payload, "relay");
+            } catch {
+              // Invalid ciphertext is ignored. The server never sees plaintext.
+            }
+          }
+        }
+      } finally {
+        if (pollEnabledRef.current) {
+          pollTimerRef.current = setTimeout(tick, RELAY_POLL_MS);
+        }
+      }
+    };
 
-          mime,
+    void tick();
+  }, [handlePayload, stopRelayPolling]);
 
-          size:
-            file.size,
+  const activateRelay = useCallback(async () => {
+    if (transportRef.current === "relay") return;
 
-          buffer,
+    clearConnectionTimers();
+    setTransportMode("relay");
+    setConnecting(true);
+    setConnected(false);
 
-          time,
+    connectionRef.current?.close();
+    connectionRef.current = null;
+
+    try {
+      await sendRelayPayload({
+        type: "control",
+        action: "relay-hello",
+        from: clientIdRef.current,
+      });
+
+      relayHandshakeTimeoutRef.current = setTimeout(() => {
+        if (!connected && transportRef.current === "relay") {
+          setConnecting(false);
+          addSystem("Relay is ready, but the room creator has not responded yet.");
+        }
+      }, 10000);
+    } catch {
+      setConnecting(false);
+      addSystem("Encrypted relay could not be reached.");
+    }
+  }, [
+    addSystem,
+    clearConnectionTimers,
+    connected,
+    sendRelayPayload,
+    setTransportMode,
+  ]);
+
+  const attachConnection = useCallback(
+    (
+      connection: DataConnection,
+      role: "host" | "guest",
+      guestRoom?: string,
+      guestPin?: string
+    ) => {
+      if (transportRef.current === "relay") {
+        connection.close();
+        return;
+      }
+
+      connectionRef.current = connection;
+
+      p2pTimeoutRef.current = setTimeout(() => {
+        if (!connection.open && transportRef.current !== "relay") {
+          connection.close();
+          void activateRelay();
+        }
+      }, P2P_TIMEOUT_MS);
+
+      connection.on("open", () => {
+        if (p2pTimeoutRef.current) {
+          clearTimeout(p2pTimeoutRef.current);
+          p2pTimeoutRef.current = null;
+        }
+
+        if (role === "guest") {
+          connection.send({
+            type: "auth",
+            room: guestRoom?.toUpperCase() || "",
+            pin: guestPin || "",
+          });
+
+          authTimeoutRef.current = setTimeout(() => {
+            if (transportRef.current !== "relay") {
+              void activateRelay();
+            }
+          }, 8000);
+        }
+      });
+
+      connection.on("data", (raw) => {
+        const data = raw as any;
+
+        if (role === "host" && data?.type === "auth") {
+          const valid =
+            String(data.room || "").toUpperCase() === roomIdRef.current &&
+            String(data.pin || "") === pinRef.current;
+
+          if (!valid) {
+            connection.send({ type: "auth-failed" });
+            setTimeout(() => connection.close(), 200);
+            return;
+          }
+
+          connection.send({ type: "auth-ok" });
+          setTransportMode("p2p");
+          setConnected(true);
+          setConnecting(false);
+          addSystem("Direct peer-to-peer connection established.");
+          return;
+        }
+
+        if (role === "guest" && data?.type === "auth-ok") {
+          if (authTimeoutRef.current) {
+            clearTimeout(authTimeoutRef.current);
+            authTimeoutRef.current = null;
+          }
+
+          setTransportMode("p2p");
+          setRoomId(guestRoom || "");
+          setConnected(true);
+          setConnecting(false);
+          setJoinPin("");
+          addSystem("PIN accepted. Direct peer-to-peer chat connected.");
+          return;
+        }
+
+        if (role === "guest" && data?.type === "auth-failed") {
+          if (authTimeoutRef.current) {
+            clearTimeout(authTimeoutRef.current);
+            authTimeoutRef.current = null;
+          }
+          setConnecting(false);
+          setConnected(false);
+          setJoinPin("");
+          addSystem("Incorrect PIN.");
+          connection.close();
+          return;
+        }
+
+        if (
+          data?.type === "chat" ||
+          data?.type === "file-meta" ||
+          data?.type === "file-chunk"
+        ) {
+          void handlePayload(data as RelayPayload, "p2p");
+        }
+      });
+
+      connection.on("error", () => {
+        if (transportRef.current !== "relay") {
+          void activateRelay();
+        }
+      });
+
+      connection.on("close", () => {
+        if (connectionRef.current === connection) {
+          connectionRef.current = null;
+        }
+
+        if (transportRef.current === "p2p") {
+          void activateRelay();
+        }
+      });
+    },
+    [
+      activateRelay,
+      addSystem,
+      handlePayload,
+      setTransportMode,
+    ]
+  );
+
+  const createRoom = async () => {
+    const cleanPin = pin.trim();
+    if (!/^\d{4,6}$/.test(cleanPin)) return;
+
+    clearConnectionTimers();
+    stopRelayPolling();
+    peerRef.current?.destroy();
+    peerRef.current = null;
+    connectionRef.current = null;
+    relayCursorRef.current = 0;
+    incomingFilesRef.current.clear();
+    revokeObjectUrls();
+    setMessages([]);
+    setFiles([]);
+    setConnected(false);
+    setConnecting(true);
+    setTransportMode("none");
+    setHostPeerId("");
+
+    const newRoom = randomString(8);
+    const secret = randomToken(32);
+    const relayToken = randomToken(32);
+
+    roomIdRef.current = newRoom;
+    pinRef.current = cleanPin;
+    roomSecretRef.current = secret;
+    relayTokenRef.current = relayToken;
+    setRoomId(newRoom);
+    setMode("host");
+
+    try {
+      const key = await deriveRoomKey(newRoom, secret, cleanPin);
+      cryptoKeyRef.current = key;
+
+      const verifier = await encryptJson(key, {
+        v: 1,
+        room: newRoom,
+        marker: "WHOLEGACY_PRIVATE_ROOM",
+      });
+
+      const createResponse = await fetch("/api/webchat/room", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          roomId: newRoom,
+          token: relayToken,
+          verifierIv: verifier.iv,
+          verifierCiphertext: verifier.ciphertext,
+        }),
+      });
+
+      if (!createResponse.ok) {
+        throw new Error("Room relay initialization failed.");
+      }
+
+      startRelayPolling();
+
+      try {
+        const { default: PeerJS } = await import("peerjs");
+        const peer = new PeerJS(PEER_OPTIONS);
+        peerRef.current = peer;
+
+        peer.on("connection", (connection: DataConnection) => {
+          if (transportRef.current === "relay") {
+            connection.close();
+            return;
+          }
+          attachConnection(connection, "host");
         });
 
-        const url =
-          URL.createObjectURL(
-            file
+        peer.on("open", (id) => {
+          setHostPeerId(id);
+          setConnecting(false);
+          addSystem("Private room ready. Share the link and PIN.");
+        });
+
+        peer.on("error", () => {
+          setConnecting(false);
+          addSystem(
+            "Direct P2P signaling is unavailable. Encrypted relay remains available."
           );
-
-        objectUrlsRef.current.push(
-          url
-        );
-
-        setFiles(
-          (current) => [
-            ...current,
-
-            {
-              id,
-
-              name:
-                file.name,
-
-              mime,
-
-              size:
-                file.size,
-
-              url,
-
-              sender:
-                "me",
-
-              time,
-            },
-          ]
-        );
+        });
       } catch {
+        setConnecting(false);
         addSystem(
-          "File could not be sent."
+          "Direct P2P is unavailable. Encrypted relay remains available."
         );
       }
+    } catch {
+      setConnecting(false);
+      addSystem("Unable to create the private room.");
+    }
+  };
+
+  const verifyPinAndJoin = async () => {
+    const cleanRoom = joinRoom.trim().toUpperCase();
+    const cleanPin = joinPin.trim();
+    const secret = roomSecretRef.current;
+    const token = relayTokenRef.current;
+
+    if (
+      !cleanRoom ||
+      !/^\d{4,6}$/.test(cleanPin) ||
+      !secret ||
+      !token
+    ) {
+      return;
+    }
+
+    setConnecting(true);
+    setConnected(false);
+    setTransportMode("none");
+    clearConnectionTimers();
+    stopRelayPolling();
+    relayCursorRef.current = 0;
+
+    try {
+      const key = await deriveRoomKey(cleanRoom, secret, cleanPin);
+
+      const response = await fetch(
+        `/api/webchat/room?room=${encodeURIComponent(
+          cleanRoom
+        )}&token=${encodeURIComponent(token)}`,
+        { cache: "no-store" }
+      );
+
+      if (!response.ok) {
+        setConnecting(false);
+        addSystem("This private room is no longer available.");
+        return;
+      }
+
+      const roomData = (await response.json()) as {
+        verifierIv: string;
+        verifierCiphertext: string;
+      };
+
+      try {
+        const verifier = await decryptJson<{
+          v: number;
+          room: string;
+          marker: string;
+        }>(
+          key,
+          roomData.verifierIv,
+          roomData.verifierCiphertext
+        );
+
+        if (
+          verifier.room !== cleanRoom ||
+          verifier.marker !== "WHOLEGACY_PRIVATE_ROOM"
+        ) {
+          throw new Error("Invalid verifier");
+        }
+      } catch {
+        setConnecting(false);
+        setJoinPin("");
+        addSystem("Incorrect PIN.");
+        return;
+      }
+
+      cryptoKeyRef.current = key;
+      roomIdRef.current = cleanRoom;
+      pinRef.current = cleanPin;
+      setRoomId(cleanRoom);
+      startRelayPolling();
+
+      if (!hostPeerId) {
+        await activateRelay();
+        return;
+      }
+
+      try {
+        const { default: PeerJS } = await import("peerjs");
+        const peer = new PeerJS(PEER_OPTIONS);
+        peerRef.current = peer;
+
+        const peerOpenTimeout = setTimeout(() => {
+          if (!peer.open && transportRef.current !== "relay") {
+            peer.destroy();
+            void activateRelay();
+          }
+        }, 8000);
+
+        peer.on("open", () => {
+          clearTimeout(peerOpenTimeout);
+          const connection = peer.connect(hostPeerId, {
+            reliable: true,
+          });
+          attachConnection(connection, "guest", cleanRoom, cleanPin);
+        });
+
+        peer.on("error", () => {
+          clearTimeout(peerOpenTimeout);
+          if (transportRef.current !== "relay") {
+            void activateRelay();
+          }
+        });
+      } catch {
+        await activateRelay();
+      }
+    } catch {
+      setConnecting(false);
+      addSystem("Unable to open this private room.");
+    }
+  };
+
+  const sendPayload = useCallback(
+    async (payload: RelayPayload) => {
+      if (transportRef.current === "p2p") {
+        const connection = connectionRef.current;
+        if (!connection?.open) {
+          await activateRelay();
+          await sendRelayPayload(payload);
+          return;
+        }
+        connection.send(payload);
+        return;
+      }
+
+      if (transportRef.current === "relay") {
+        await sendRelayPayload(payload);
+        return;
+      }
+
+      throw new Error("No active transport.");
+    },
+    [activateRelay, sendRelayPayload]
+  );
+
+  const sendMessage = async () => {
+    const text = draft.trim();
+    if (!text || !connected) return;
+
+    const message: RelayPayload = {
+      type: "chat",
+      id: crypto.randomUUID(),
+      text,
+      time: getTime(),
     };
 
-  /*
-   * ======================================================
-   * SHARE LINK
-   * ======================================================
-   */
+    try {
+      await sendPayload(message);
+      setMessages((current) => [
+        ...current,
+        {
+          id: message.id,
+          sender: "me",
+          text: message.text,
+          time: message.time,
+        },
+      ]);
+      setDraft("");
+    } catch {
+      addSystem("Message could not be sent.");
+    }
+  };
+
+  const sendFile = async (file: File) => {
+    if (!connected) return;
+
+    if (file.size > MAX_FILE_SIZE) {
+      addSystem("Maximum file size is 10 MB.");
+      return;
+    }
+
+    try {
+      const id = crypto.randomUUID();
+      const time = getTime();
+      const mime = file.type || "application/octet-stream";
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      const totalChunks = Math.ceil(bytes.length / FILE_CHUNK_BYTES);
+
+      await sendPayload({
+        type: "file-meta",
+        fileId: id,
+        name: file.name,
+        mime,
+        size: file.size,
+        totalChunks,
+        time,
+      });
+
+      for (let index = 0; index < totalChunks; index += 1) {
+        const start = index * FILE_CHUNK_BYTES;
+        const end = Math.min(bytes.length, start + FILE_CHUNK_BYTES);
+        await sendPayload({
+          type: "file-chunk",
+          fileId: id,
+          index,
+          totalChunks,
+          data: bytesToBase64(bytes.subarray(start, end)),
+        });
+      }
+
+      const url = URL.createObjectURL(file);
+      objectUrlsRef.current.push(url);
+
+      setFiles((current) => [
+        ...current,
+        {
+          id,
+          name: file.name,
+          mime,
+          size: file.size,
+          url,
+          sender: "me",
+          time,
+        },
+      ]);
+    } catch {
+      addSystem("File could not be sent.");
+    }
+  };
+
+  const pressPin = (digit: string) => {
+    if (connecting) return;
+    setJoinPin((current) =>
+      current.length >= 6 ? current : current + digit
+    );
+  };
+
+  const deletePin = () => {
+    if (connecting) return;
+    setJoinPin((current) => current.slice(0, -1));
+  };
 
   const shareUrl =
-    typeof window !==
-      "undefined" &&
-    hostPeerId
-      ? `${
-          window.location.origin
-        }/webchat?room=${encodeURIComponent(
+    typeof window !== "undefined" &&
+    roomId &&
+    roomSecretRef.current &&
+    relayTokenRef.current
+      ? `${window.location.origin}/webchat?room=${encodeURIComponent(
           roomId
-        )}&peer=${encodeURIComponent(
-          hostPeerId
-        )}`
+        )}${
+          hostPeerId ? `&peer=${encodeURIComponent(hostPeerId)}` : ""
+        }#s=${encodeURIComponent(
+          roomSecretRef.current
+        )}&t=${encodeURIComponent(relayTokenRef.current)}`
       : "";
 
-  /*
-   * ======================================================
-   * COPY LINK
-   * ======================================================
-   */
+  const copyInvite = async () => {
+    if (!shareUrl) return;
+    await navigator.clipboard.writeText(shareUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
 
-  const copyInvite =
-    async () => {
-      if (!shareUrl) {
-        return;
-      }
+  const copyPin = async () => {
+    if (!pin) return;
+    await navigator.clipboard.writeText(pin);
+    setCopiedPin(true);
+    setTimeout(() => setCopiedPin(false), 1500);
+  };
 
-      try {
-        await navigator.clipboard.writeText(
-          shareUrl
-        );
+  const leave = async () => {
+    const room = roomIdRef.current;
+    const token = relayTokenRef.current;
 
-        setCopied(
-          true
-        );
+    clearConnectionTimers();
+    stopRelayPolling();
+    connectionRef.current?.close();
+    peerRef.current?.destroy();
+    revokeObjectUrls();
 
-        setTimeout(
-          () =>
-            setCopied(
-              false
-            ),
-          1500
-        );
-      } catch {
-        setCopied(
-          false
-        );
-      }
-    };
+    if (mode === "host" && room && token) {
+      fetch("/api/webchat/room", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ roomId: room, token }),
+      }).catch(() => undefined);
+    }
 
-  /*
-   * ======================================================
-   * COPY PIN
-   * ======================================================
-   */
+    peerRef.current = null;
+    connectionRef.current = null;
+    roomIdRef.current = "";
+    pinRef.current = "";
+    roomSecretRef.current = "";
+    relayTokenRef.current = "";
+    cryptoKeyRef.current = null;
+    relayCursorRef.current = 0;
+    incomingFilesRef.current.clear();
 
-  const copyPin =
-    async () => {
-      if (!pin) {
-        return;
-      }
+    setMode("choose");
+    setTransportMode("none");
+    setRoomId("");
+    setHostPeerId("");
+    setPin("");
+    setJoinPin("");
+    setJoinRoom("");
+    setConnected(false);
+    setConnecting(false);
+    setDraft("");
+    setMessages([]);
+    setFiles([]);
 
-      try {
-        await navigator.clipboard.writeText(
-          pin
-        );
-
-        setCopiedPin(
-          true
-        );
-
-        setTimeout(
-          () =>
-            setCopiedPin(
-              false
-            ),
-          1500
-        );
-      } catch {
-        setCopiedPin(
-          false
-        );
-      }
-    };
-
-  /*
-   * ======================================================
-   * LEAVE ROOM
-   * ======================================================
-   */
-
-  const leave =
-    () => {
-      clearTimers();
-
-      connectionRef.current?.close();
-
-      peerRef.current?.destroy();
-
-      connectionRef.current =
-        null;
-
-      peerRef.current =
-        null;
-
-      roomIdRef.current =
-        "";
-
-      pinRef.current =
-        "";
-
-      roleRef.current =
-        null;
-
-      revokeObjectUrls();
-
-      setMode(
-        "choose"
-      );
-
-      setRoomId("");
-
-      setHostPeerId("");
-
-      setPin("");
-
-      setJoinPin("");
-
-      setJoinRoom("");
-
-      setConnected(
-        false
-      );
-
-      setConnecting(
-        false
-      );
-
-      setDraft("");
-
-      setMessages([]);
-
-      setFiles([]);
-
-      if (
-        typeof window !==
-        "undefined"
-      ) {
-        window.history.replaceState(
-          {},
-          "",
-          "/webchat"
-        );
-      }
-    };
-
-  /*
-   * ======================================================
-   * COMPONENT CLEANUP
-   * ======================================================
-   */
+    if (typeof window !== "undefined") {
+      window.history.replaceState({}, "", "/webchat");
+    }
+  };
 
   useEffect(() => {
     return () => {
-      clearTimers();
-
+      clearConnectionTimers();
+      stopRelayPolling();
       connectionRef.current?.close();
-
       peerRef.current?.destroy();
-
       revokeObjectUrls();
     };
   }, [
-    clearTimers,
+    clearConnectionTimers,
     revokeObjectUrls,
+    stopRelayPolling,
   ]);
 
-  /*
-   * ======================================================
-   * HOME / CREATE ROOM
-   * ======================================================
-   */
-
-  if (
-    mode ===
-    "choose"
-  ) {
+  if (mode === "choose") {
     return (
       <main className="p2p-page">
         <div className="p2p-shell p2p-center">
-
-          <a
-            href="/"
-            className="p2p-brand"
-          >
-            <img
-              src="/logo-header.png"
-              alt="WHOLEGACY"
-            />
-
-            <span>
-              WHOLEGACY
-            </span>
+          <a href="/" className="p2p-brand">
+            <img src="/logo-header.png" alt="WHOLEGACY" />
+            <span>WHOLEGACY</span>
           </a>
 
           <div className="p2p-hero">
-
-            <div className="p2p-kicker">
-              PRIVATE PEER-TO-PEER CHAT
-            </div>
-
+            <div className="p2p-kicker">PRIVATE CHAT</div>
             <h1>
               Talk privately.
               <br />
-
-              <em>
-                Directly.
-              </em>
+              <em>Direct when possible.</em>
             </h1>
-
             <p>
-              Create a temporary private room,
-              choose a 4–6 digit PIN and share
-              the invitation link.
+              Create a temporary private room with your own 4–6 digit PIN.
+              WHOLEGACY tries direct WebRTC first and automatically falls back
+              to encrypted temporary relay when needed.
             </p>
-
           </div>
 
-          <div
-            style={{
-              width:
-                "min(760px, 100%)",
-              marginBottom:
-                "14px",
-            }}
-          >
-
-            <label
-              style={{
-                display:
-                  "block",
-                marginBottom:
-                  "8px",
-                fontSize:
-                  "9px",
-                letterSpacing:
-                  ".18em",
-                fontWeight:
-                  700,
-                color:
-                  "#77736c",
-              }}
-            >
-              CREATE ROOM PIN
-            </label>
-
+          <div className={styles.createPin}>
+            <label>CREATE ROOM PIN</label>
             <input
               type="password"
               inputMode="numeric"
               pattern="[0-9]*"
               maxLength={6}
               value={pin}
-              onChange={(
-                event
-              ) => {
-                const value =
-                  event.target.value.replace(
-                    /\D/g,
-                    ""
-                  );
-
+              onChange={(event) =>
                 setPin(
-                  value.slice(
-                    0,
-                    6
-                  )
-                );
-              }}
+                  event.target.value.replace(/\D/g, "").slice(0, 6)
+                )
+              }
               placeholder="4–6 digit PIN"
               autoComplete="new-password"
-              style={{
-                width:
-                  "100%",
-                boxSizing:
-                  "border-box",
-                border:
-                  "1px solid #cfcbc4",
-                background:
-                  "#ffffff",
-                padding:
-                  "14px 15px",
-                outline:
-                  "none",
-                fontSize:
-                  "18px",
-                letterSpacing:
-                  ".25em",
-              }}
             />
-
           </div>
 
           <div className="p2p-choice-grid">
-
             <button
               className="p2p-choice"
-              onClick={
-                createRoom
-              }
-              disabled={
-                !/^\d{4,6}$/.test(
-                  pin
-                )
-              }
+              onClick={createRoom}
+              disabled={!/^\d{4,6}$/.test(pin)}
             >
-              <span className="p2p-choice-number">
-                01
-              </span>
-
-              <strong>
-                Create a room
-              </strong>
-
-              <small>
-                Create a private room protected
-                by your own PIN.
-              </small>
+              <span className="p2p-choice-number">01</span>
+              <strong>Create a room</strong>
+              <small>Create a temporary PIN-protected room.</small>
             </button>
 
             <button
               className="p2p-choice"
-              onClick={() =>
-                setMode(
-                  "join"
-                )
-              }
+              onClick={() => setMode("join")}
             >
-              <span className="p2p-choice-number">
-                02
-              </span>
-
-              <strong>
-                Join a room
-              </strong>
-
-              <small>
-                Open an invitation and enter
-                the room PIN.
-              </small>
+              <span className="p2p-choice-number">02</span>
+              <strong>Join a room</strong>
+              <small>Use an invitation link and touch your PIN.</small>
             </button>
-
           </div>
 
           <div className="p2p-note">
-            <span>●</span>
-            No account required ·
-            No chat history stored by WHOLEGACY
+            <span>●</span> No account required · Relay contents are encrypted
+            in the browser
           </div>
-
         </div>
       </main>
     );
   }
 
-  /*
-   * ======================================================
-   * USER 2 PIN KEYPAD
-   * ======================================================
-   */
-
-  if (
-    mode ===
-      "join" &&
-    !connected
-  ) {
-    const lastSystemMessage =
-      messages
-        .filter(
-          (message) =>
-            message.sender ===
-            "system"
-        )
-        .slice(-1)[0];
+  if (mode === "join" && !connected) {
+    const lastSystemMessage = messages
+      .filter((message) => message.sender === "system")
+      .slice(-1)[0];
 
     return (
       <main className="p2p-page">
-        <div className="p2p-pin-page">
-
-          <a
-            href="/"
-            className="p2p-brand"
-          >
-            <img
-              src="/logo-header.png"
-              alt="WHOLEGACY"
-            />
-
-            <span>
-              WHOLEGACY
-            </span>
+        <div className={styles.pinPage}>
+          <a href="/" className="p2p-brand">
+            <img src="/logo-header.png" alt="WHOLEGACY" />
+            <span>WHOLEGACY</span>
           </a>
 
-          <div className="p2p-pin-box">
+          <div className={styles.pinBox}>
+            <div className="p2p-kicker">PRIVATE ROOM</div>
+            <h1>Enter PIN</h1>
+            <p>Touch the PIN shared by the room creator.</p>
 
-            <div className="p2p-kicker">
-              PRIVATE ROOM
-            </div>
-
-            <h1>
-              Enter PIN
-            </h1>
-
-            <p>
-              Enter the PIN shared by
-              the room creator.
-            </p>
-
-            <div className="p2p-pin-dots">
-
+            <div className={styles.pinDots}>
               {Array.from({
-                length:
-                  Math.max(
-                    4,
-                    joinPin.length
-                  ),
-              }).map(
-                (
-                  _,
-                  index
-                ) => (
-                  <span
-                    key={
-                      index
-                    }
-                    className={
-                      index <
-                      joinPin.length
-                        ? "filled"
-                        : ""
-                    }
-                  />
-                )
-              )}
-
+                length: Math.max(4, joinPin.length),
+              }).map((_, index) => (
+                <span
+                  key={index}
+                  className={index < joinPin.length ? styles.filled : ""}
+                />
+              ))}
             </div>
 
-            <div className="p2p-keypad">
-
-              {[
-                "1",
-                "2",
-                "3",
-                "4",
-                "5",
-                "6",
-                "7",
-                "8",
-                "9",
-              ].map(
-                (
-                  number
-                ) => (
-                  <button
-                    type="button"
-                    key={
-                      number
-                    }
-                    onClick={() =>
-                      pressPin(
-                        number
-                      )
-                    }
-                    disabled={
-                      connecting
-                    }
-                  >
-                    {number}
-                  </button>
-                )
-              )}
+            <div className={styles.keypad}>
+              {["1","2","3","4","5","6","7","8","9"].map((number) => (
+                <button
+                  type="button"
+                  key={number}
+                  onClick={() => pressPin(number)}
+                  disabled={connecting}
+                >
+                  {number}
+                </button>
+              ))}
 
               <button
                 type="button"
-                onClick={
-                  deletePin
-                }
-                disabled={
-                  connecting ||
-                  joinPin.length ===
-                    0
-                }
-                aria-label="Delete PIN digit"
+                onClick={deletePin}
+                disabled={connecting || joinPin.length === 0}
+                aria-label="Delete digit"
               >
                 ←
               </button>
 
               <button
                 type="button"
-                onClick={() =>
-                  pressPin(
-                    "0"
-                  )
-                }
-                disabled={
-                  connecting
-                }
+                onClick={() => pressPin("0")}
+                disabled={connecting}
               >
                 0
               </button>
 
               <button
                 type="button"
-                className="p2p-pin-enter"
-                onClick={
-                  joinRoomNow
-                }
+                className={styles.enterButton}
+                onClick={verifyPinAndJoin}
                 disabled={
                   connecting ||
-                  joinPin.length <
-                    4 ||
-                  !hostPeerId ||
-                  !joinRoom
+                  joinPin.length < 4 ||
+                  !joinRoom ||
+                  !roomSecretRef.current ||
+                  !relayTokenRef.current
                 }
                 aria-label="Enter private room"
               >
                 →
               </button>
-
             </div>
 
             {connecting && (
-              <div className="p2p-pin-status">
-                Connecting…
+              <div className={styles.pinStatus}>
+                Connecting securely…
               </div>
             )}
 
-            {!hostPeerId && (
-              <div className="p2p-pin-status">
-                Open the complete invitation
-                link from the room creator.
+            {!connecting && lastSystemMessage && (
+              <div className={styles.pinStatus}>
+                {lastSystemMessage.text}
               </div>
             )}
 
-            {!connecting &&
-              lastSystemMessage && (
-                <div className="p2p-pin-status">
-                  {
-                    lastSystemMessage.text
-                  }
-                </div>
-              )}
+            {!roomSecretRef.current && (
+              <div className={styles.pinStatus}>
+                Open the complete invitation link from the room creator.
+              </div>
+            )}
 
-            <button
-              type="button"
-              className="p2p-back"
-              onClick={leave}
-            >
+            <button type="button" className="p2p-back" onClick={leave}>
               ← Back
             </button>
-
           </div>
         </div>
       </main>
     );
   }
 
-  /*
-   * ======================================================
-   * CHAT SCREEN
-   * ======================================================
-   */
-
   return (
     <main className="p2p-page">
-
       <div className="p2p-chat-shell">
-
         <header className="p2p-chat-header">
-
           <div>
-
-            <a
-              href="/"
-              className="p2p-mini-brand"
-            >
-              <img
-                src="/logo-header.png"
-                alt="WHOLEGACY"
-              />
-
-              <span>
-                WHOLEGACY / PRIVATE CHAT
-              </span>
+            <a href="/" className="p2p-mini-brand">
+              <img src="/logo-header.png" alt="WHOLEGACY" />
+              <span>WHOLEGACY / PRIVATE CHAT</span>
             </a>
 
             <div className="p2p-room-line">
-
-              ROOM{" "}
-
-              <strong>
-                {
-                  roomId ||
-                  joinRoom
-                }
-              </strong>
-
-              <span
-                className={
-                  connected
-                    ? "online"
-                    : ""
-                }
-              >
+              ROOM <strong>{roomId || joinRoom}</strong>
+              <span className={connected ? "online" : ""}>
                 ●{" "}
-
                 {connected
-                  ? "CONNECTED"
+                  ? transport === "p2p"
+                    ? "DIRECT"
+                    : "ENCRYPTED RELAY"
                   : connecting
                   ? "CONNECTING"
                   : "WAITING"}
               </span>
-
             </div>
-
           </div>
 
-          <button
-            className="p2p-leave"
-            onClick={leave}
-          >
+          <button className="p2p-leave" onClick={leave}>
             Leave
           </button>
-
         </header>
 
-        {mode ===
-          "host" && (
+        {mode === "host" && (
           <section className="p2p-invite">
-
             <div>
-
-              <span>
-                INVITE
-              </span>
-
-              <strong>
-                Share this link + PIN
-              </strong>
-
-              <code>
-                {shareUrl ||
-                  "Generating peer address…"}
-              </code>
-
+              <span>INVITE</span>
+              <strong>Share this link + PIN</strong>
+              <code>{shareUrl || "Preparing private room…"}</code>
             </div>
 
             <div className="p2p-invite-actions">
-
               <div className="p2p-password">
-
-                <small>
-                  PIN
-                </small>
-
-                <b>
-                  {pin}
-                </b>
-
+                <small>PIN</small>
+                <b>{pin}</b>
               </div>
 
-              <button
-                type="button"
-                onClick={
-                  copyPin
-                }
-              >
-                {copiedPin
-                  ? "PIN copied ✓"
-                  : "Copy PIN"}
+              <button type="button" onClick={copyPin}>
+                {copiedPin ? "PIN copied ✓" : "Copy PIN"}
               </button>
 
               <button
                 type="button"
-                onClick={
-                  copyInvite
-                }
-                disabled={
-                  !shareUrl
-                }
+                onClick={copyInvite}
+                disabled={!shareUrl}
               >
-                {copied
-                  ? "Link copied ✓"
-                  : "Copy link"}
+                {copied ? "Link copied ✓" : "Copy link"}
               </button>
-
             </div>
-
           </section>
         )}
 
-        <section
-          className="p2p-messages"
-          aria-live="polite"
-        >
+        <section className="p2p-messages" aria-live="polite">
+          {messages.length === 0 && files.length === 0 && (
+            <div className="p2p-empty">
+              <span>∞</span>
+              <strong>Your private conversation starts here.</strong>
+              <small>
+                Direct P2P when possible, encrypted relay when required.
+              </small>
+            </div>
+          )}
 
-          {messages.length ===
-            0 &&
-            files.length ===
-              0 && (
-              <div className="p2p-empty">
-
-                <span>
-                  ∞
-                </span>
-
-                <strong>
-                  Your private conversation
-                  starts here.
-                </strong>
-
-                <small>
-                  Browser-to-browser private
-                  connection.
-                </small>
-
-              </div>
-            )}
-
-          {messages.map(
-            (
-              message
-            ) => {
-              if (
-                message.sender ===
-                "system"
-              ) {
-                return (
-                  <div
-                    className="p2p-system"
-                    key={
-                      message.id
-                    }
-                  >
-                    <span>
-                      {
-                        message.text
-                      }
-                    </span>
-                  </div>
-                );
-              }
-
+          {messages.map((message) => {
+            if (message.sender === "system") {
               return (
-                <div
-                  className={`p2p-message ${message.sender}`}
-                  key={
-                    message.id
-                  }
-                >
-
-                  <div>
-                    {
-                      message.text
-                    }
-                  </div>
-
-                  <time>
-                    {
-                      message.time
-                    }
-                  </time>
-
+                <div className="p2p-system" key={message.id}>
+                  <span>{message.text}</span>
                 </div>
               );
             }
-          )}
 
-          {files.map(
-            (
-              file
-            ) => (
+            return (
               <div
-                className={`p2p-message ${file.sender}`}
-                key={
-                  file.id
-                }
+                className={`p2p-message ${message.sender}`}
+                key={message.id}
               >
-
-                <div className="p2p-file-card">
-
-                  {file.mime.startsWith(
-                    "image/"
-                  ) ? (
-                    <>
-
-                      <img
-                        src={
-                          file.url
-                        }
-                        alt={
-                          file.name
-                        }
-                        className="p2p-chat-image"
-                        style={{
-                          display:
-                            "block",
-                          width:
-                            "min(320px, 100%)",
-                          maxHeight:
-                            "420px",
-                          objectFit:
-                            "cover",
-                          borderRadius:
-                            "4px",
-                        }}
-                      />
-
-                      <a
-                        href={
-                          file.url
-                        }
-                        download={
-                          file.name
-                        }
-                      >
-                        Download photo
-                      </a>
-
-                    </>
-                  ) : (
-                    <>
-
-                      <strong>
-                        {
-                          file.name
-                        }
-                      </strong>
-
-                      <small>
-                        {(
-                          file.size /
-                          1024 /
-                          1024
-                        ).toFixed(
-                          2
-                        )}{" "}
-                        MB
-                      </small>
-
-                      <a
-                        href={
-                          file.url
-                        }
-                        download={
-                          file.name
-                        }
-                      >
-                        Download file
-                      </a>
-
-                    </>
-                  )}
-
-                </div>
-
-                <time>
-                  {
-                    file.time
-                  }
-                </time>
-
+                <div>{message.text}</div>
+                <time>{message.time}</time>
               </div>
-            )
-          )}
+            );
+          })}
 
+          {files.map((file) => (
+            <div
+              className={`p2p-message ${file.sender}`}
+              key={file.id}
+            >
+              <div className={styles.fileCard}>
+                {file.mime.startsWith("image/") ? (
+                  <>
+                    <img
+                      src={file.url}
+                      alt={file.name}
+                      className={styles.chatImage}
+                    />
+                    <a href={file.url} download={file.name}>
+                      Download photo
+                    </a>
+                  </>
+                ) : (
+                  <>
+                    <strong>{file.name}</strong>
+                    <small>
+                      {(file.size / 1024 / 1024).toFixed(2)} MB
+                    </small>
+                    <a href={file.url} download={file.name}>
+                      Download file
+                    </a>
+                  </>
+                )}
+              </div>
+              <time>{file.time}</time>
+            </div>
+          ))}
         </section>
 
         <input
-          ref={
-            fileInputRef
-          }
+          ref={fileInputRef}
           type="file"
           hidden
-          onChange={(
-            event
-          ) => {
-            const file =
-              event.target.files?.[0];
-
-            if (file) {
-              sendFile(
-                file
-              );
-            }
-
-            event.currentTarget.value =
-              "";
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (file) void sendFile(file);
+            event.currentTarget.value = "";
           }}
         />
 
         <input
-          ref={
-            cameraInputRef
-          }
+          ref={cameraInputRef}
           type="file"
           accept="image/*"
           capture="environment"
           hidden
-          onChange={(
-            event
-          ) => {
-            const file =
-              event.target.files?.[0];
-
-            if (file) {
-              sendFile(
-                file
-              );
-            }
-
-            event.currentTarget.value =
-              "";
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (file) void sendFile(file);
+            event.currentTarget.value = "";
           }}
         />
 
         <form
           className="p2p-composer"
-          onSubmit={(
-            event
-          ) => {
+          onSubmit={(event) => {
             event.preventDefault();
-
-            sendMessage();
+            void sendMessage();
           }}
         >
-
           <button
             type="button"
-            onClick={() =>
-              fileInputRef.current?.click()
-            }
-            disabled={
-              !connected
-            }
+            onClick={() => fileInputRef.current?.click()}
+            disabled={!connected}
             title="Attach file"
-            style={{
-              minWidth:
-                "42px",
-              border:
-                "1px solid #cfcbc4",
-              background:
-                "#f3f1ec",
-              color:
-                "#37342f",
-              cursor:
-                connected
-                  ? "pointer"
-                  : "not-allowed",
-              opacity:
-                connected
-                  ? 1
-                  : 0.35,
-            }}
           >
             +
           </button>
 
           <button
             type="button"
-            onClick={() =>
-              cameraInputRef.current?.click()
-            }
-            disabled={
-              !connected
-            }
+            onClick={() => cameraInputRef.current?.click()}
+            disabled={!connected}
             title="Take photo"
-            style={{
-              border:
-                "1px solid #cfcbc4",
-              background:
-                "#f3f1ec",
-              color:
-                "#37342f",
-              padding:
-                "0 14px",
-              cursor:
-                connected
-                  ? "pointer"
-                  : "not-allowed",
-              opacity:
-                connected
-                  ? 1
-                  : 0.35,
-            }}
           >
             Camera
           </button>
 
           <input
-            value={
-              draft
-            }
-            onChange={(
-              event
-            ) =>
-              setDraft(
-                event.target.value
-              )
-            }
+            value={draft}
+            onChange={(event) => setDraft(event.target.value)}
             placeholder={
               connected
                 ? "Write a private message…"
                 : "Waiting for connection…"
             }
-            disabled={
-              !connected
-            }
+            disabled={!connected}
           />
 
           <button
             type="submit"
-            disabled={
-              !connected ||
-              !draft.trim()
-            }
+            disabled={!connected || !draft.trim()}
           >
             Send →
           </button>
-
         </form>
-
       </div>
-
     </main>
   );
 }

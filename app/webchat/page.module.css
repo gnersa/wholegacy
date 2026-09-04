@@ -1,0 +1,169 @@
+.createPin {
+  width: min(760px, 100%);
+  margin-bottom: 14px;
+}
+
+.createPin label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 9px;
+  letter-spacing: .18em;
+  font-weight: 700;
+  color: #77736c;
+}
+
+.createPin input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #cfcbc4;
+  background: #fff;
+  padding: 14px 15px;
+  outline: none;
+  font-size: 18px;
+  letter-spacing: .25em;
+}
+
+.pinPage {
+  min-height: 100vh;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 30px 20px;
+  background: #f4f3ef;
+}
+
+.pinBox {
+  width: 100%;
+  max-width: 360px;
+  margin: auto 0;
+  text-align: center;
+}
+
+.pinBox h1 {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 46px;
+  line-height: 1;
+  font-weight: 400;
+  letter-spacing: -.03em;
+  color: #292825;
+}
+
+.pinBox p {
+  margin: 14px auto 32px;
+  color: #77736c;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.pinDots {
+  min-height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 34px;
+}
+
+.pinDots span {
+  width: 12px;
+  height: 12px;
+  box-sizing: border-box;
+  border: 1px solid #77736c;
+  border-radius: 50%;
+  background: transparent;
+  transition: background .12s ease, transform .12s ease;
+}
+
+.pinDots span.filled {
+  background: #292825;
+  border-color: #292825;
+  transform: scale(1.08);
+}
+
+.keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 72px);
+  justify-content: center;
+  gap: 14px;
+}
+
+.keypad button {
+  appearance: none;
+  width: 72px;
+  height: 72px;
+  padding: 0;
+  border: 1px solid #d2cec7;
+  border-radius: 50%;
+  background: #fbfaf7;
+  color: #292825;
+  font-size: 23px;
+  cursor: pointer;
+  transition: transform .08s ease, background .08s ease;
+}
+
+.keypad button:active {
+  transform: scale(.93);
+  background: #e9e6df;
+}
+
+.keypad button:disabled {
+  opacity: .35;
+  cursor: default;
+}
+
+.keypad .enterButton {
+  background: #292825;
+  color: #fff;
+  border-color: #292825;
+}
+
+.pinStatus {
+  max-width: 320px;
+  margin: 24px auto 0;
+  padding: 10px 12px;
+  color: #77736c;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.fileCard {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fileCard a {
+  color: inherit;
+  font-size: 11px;
+  text-decoration: underline;
+}
+
+.chatImage {
+  display: block;
+  width: min(320px, 100%);
+  max-height: 420px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+@media (max-width: 480px) {
+  .pinPage {
+    padding: 22px 16px 28px;
+  }
+
+  .pinBox h1 {
+    font-size: 42px;
+  }
+
+  .keypad {
+    grid-template-columns: repeat(3, 68px);
+    gap: 13px;
+  }
+
+  .keypad button {
+    width: 68px;
+    height: 68px;
+  }
+}
