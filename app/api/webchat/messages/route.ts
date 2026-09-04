@@ -19,11 +19,11 @@ function safeEqualHex(a: string, b: string) {
   return first.length === second.length && timingSafeEqual(first, second);
 }
 
-function validRoomId(value: unknown) {
+function validRoomId(value: unknown): value is string {
   return typeof value === "string" && /^[A-Z2-9]{8}$/.test(value);
 }
 
-function validToken(value: unknown) {
+function validToken(value: unknown): value is string {
   return typeof value === "string" && value.length >= 32 && value.length <= 128;
 }
 

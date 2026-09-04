@@ -13,11 +13,11 @@ function tokenHash(token: string) {
   return createHash("sha256").update(token).digest("hex");
 }
 
-function validRoomId(value: unknown) {
+function validRoomId(value: unknown): value is string {
   return typeof value === "string" && /^[A-Z2-9]{8}$/.test(value);
 }
 
-function validToken(value: unknown) {
+function validToken(value: unknown): value is string {
   return typeof value === "string" && value.length >= 32 && value.length <= 128;
 }
 
