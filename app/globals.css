@@ -3534,3 +3534,214 @@ h2 { font-size: clamp(38px, 4vw, 54px); line-height: 1.08; margin: 0 0 20px; let
     padding: 18px;
   }
 }
+
+/* =========================================================
+   WHOLEGACY PIN ROOM
+   ========================================================= */
+
+.p2p-pin-page {
+  min-height: 100vh;
+  box-sizing: border-box;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  padding: 30px 20px;
+
+  background: #f4f3ef;
+}
+
+.p2p-pin-box {
+  width: 100%;
+  max-width: 360px;
+
+  margin: auto 0;
+
+  text-align: center;
+}
+
+.p2p-pin-box h1 {
+  margin: 0;
+
+  font-family:
+    Georgia,
+    "Times New Roman",
+    serif;
+
+  font-size: 46px;
+  line-height: 1;
+
+  font-weight: 400;
+
+  letter-spacing: -0.03em;
+
+  color: #292825;
+}
+
+.p2p-pin-box p {
+  margin: 14px auto 32px;
+
+  color: #77736c;
+
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.p2p-pin-dots {
+  min-height: 22px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 12px;
+
+  margin-bottom: 34px;
+}
+
+.p2p-pin-dots span {
+  width: 12px;
+  height: 12px;
+
+  box-sizing: border-box;
+
+  border: 1px solid #77736c;
+  border-radius: 50%;
+
+  background: transparent;
+
+  transition:
+    background 0.12s ease,
+    transform 0.12s ease;
+}
+
+.p2p-pin-dots span.filled {
+  background: #292825;
+  border-color: #292825;
+
+  transform: scale(1.08);
+}
+
+.p2p-keypad {
+  display: grid;
+
+  grid-template-columns:
+    repeat(3, 72px);
+
+  justify-content: center;
+
+  gap: 14px;
+}
+
+.p2p-keypad button {
+  appearance: none;
+
+  width: 72px;
+  height: 72px;
+
+  padding: 0;
+
+  border: 1px solid #d2cec7;
+  border-radius: 50%;
+
+  background: #fbfaf7;
+
+  color: #292825;
+
+  font-family:
+    Arial,
+    Helvetica,
+    sans-serif;
+
+  font-size: 23px;
+  font-weight: 400;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.08s ease,
+    background 0.08s ease,
+    border-color 0.08s ease;
+}
+
+.p2p-keypad button:hover {
+  border-color: #99948c;
+}
+
+.p2p-keypad button:active {
+  transform: scale(0.93);
+
+  background: #e9e6df;
+}
+
+.p2p-keypad button:disabled {
+  opacity: 0.35;
+
+  cursor: default;
+}
+
+.p2p-keypad .p2p-pin-enter {
+  background: #292825;
+
+  color: #ffffff;
+
+  border-color: #292825;
+}
+
+.p2p-keypad .p2p-pin-enter:hover {
+  background: #191816;
+
+  border-color: #191816;
+}
+
+.p2p-pin-status {
+  max-width: 320px;
+
+  margin: 24px auto 0;
+
+  padding: 10px 12px;
+
+  color: #77736c;
+
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.p2p-file-card {
+  display: flex;
+  flex-direction: column;
+
+  gap: 8px;
+}
+
+.p2p-file-card a {
+  color: inherit;
+
+  font-size: 11px;
+
+  text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+  .p2p-pin-page {
+    padding:
+      22px 16px 28px;
+  }
+
+  .p2p-pin-box h1 {
+    font-size: 42px;
+  }
+
+  .p2p-keypad {
+    grid-template-columns:
+      repeat(3, 68px);
+
+    gap: 13px;
+  }
+
+  .p2p-keypad button {
+    width: 68px;
+    height: 68px;
+  }
+}
