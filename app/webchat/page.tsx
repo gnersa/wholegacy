@@ -31,6 +31,7 @@ type ChatMessage = {
     | "system";
   text: string;
   time: string;
+  order: number;
 };
 
 type SharedFile = {
@@ -43,6 +44,7 @@ type SharedFile = {
     | "me"
     | "peer";
   time: string;
+  order: number;
 };
 
 type RelayPayload =
@@ -82,11 +84,17 @@ type IncomingFileState = {
   size: number;
   totalChunks: number;
   time: string;
+  order: number;
 
   chunks: Map<
     number,
     Uint8Array
   >;
+};
+
+type CameraPreview = {
+  file: File;
+  url: string;
 };
 
 const ALPHABET =
@@ -623,6 +631,14 @@ export default function WebChatPage() {
   ] =
     useState(false);
 
+  const [
+    cameraPreview,
+    setCameraPreview,
+  ] =
+    useState<CameraPreview | null>(
+      null
+    );
+
   /*
    * =======================================================
    * REFS
@@ -789,6 +805,9 @@ export default function WebChatPage() {
 
               time:
                 getTime(),
+
+              order:
+                Date.now(),
             },
           ]
         );
@@ -1108,6 +1127,9 @@ export default function WebChatPage() {
 
               time:
                 state.time,
+
+              order:
+                state.order,
             },
           ]
         );
@@ -1368,6 +1390,9 @@ export default function WebChatPage() {
 
                 time:
                   payload.time,
+
+                order:
+                  Date.now(),
               },
             ]
           );
@@ -1401,6 +1426,9 @@ export default function WebChatPage() {
 
               time:
                 payload.time,
+
+              order:
+                Date.now(),
 
               chunks:
                 new Map(),
@@ -2652,6 +2680,9 @@ export default function WebChatPage() {
         return;
       }
 
+      const order =
+        Date.now();
+
       const message:
         RelayPayload = {
         type:
@@ -2689,6 +2720,8 @@ export default function WebChatPage() {
 
               time:
                 message.time,
+
+              order,
             },
           ]
         );
@@ -2734,6 +2767,9 @@ export default function WebChatPage() {
 
         const time =
           getTime();
+
+        const order =
+          Date.now();
 
         const mime =
           file.type ||
@@ -2876,6 +2912,8 @@ export default function WebChatPage() {
                 "me",
 
               time,
+
+              order,
             },
           ]
         );
@@ -3128,12 +3166,25 @@ export default function WebChatPage() {
               }
             );
 
-          await sendFile(
-            file
+          const previewUrl =
+            URL.createObjectURL(
+              file
+            );
+
+          setCameraPreview(
+            {
+              file,
+              url:
+                previewUrl,
+            }
+          );
+
+          setCameraBusy(
+            false
           );
         } catch {
           addSystem(
-            "Camera photo could not be attached."
+            "Camera photo could not be prepared."
           );
           setCameraBusy(
             false
@@ -3143,6 +3194,94 @@ export default function WebChatPage() {
       [
         addSystem,
         closeCamera,
+      ]
+    );
+
+  const cancelCameraPreview =
+    useCallback(
+      () => {
+        if (
+          cameraPreview
+        ) {
+          URL.revokeObjectURL(
+            cameraPreview.url
+          );
+        }
+
+        setCameraPreview(
+          null
+        );
+
+        setCameraBusy(
+          false
+        );
+      },
+      [
+        cameraPreview,
+      ]
+    );
+
+  const retakeCameraPhoto =
+    useCallback(
+      async () => {
+        if (
+          cameraPreview
+        ) {
+          URL.revokeObjectURL(
+            cameraPreview.url
+          );
+        }
+
+        setCameraPreview(
+          null
+        );
+
+        await openCamera();
+      },
+      [
+        cameraPreview,
+        openCamera,
+      ]
+    );
+
+  const sendCameraPreview =
+    useCallback(
+      async () => {
+        if (
+          !cameraPreview ||
+          cameraBusy
+        ) {
+          return;
+        }
+
+        const preview =
+          cameraPreview;
+
+        setCameraBusy(
+          true
+        );
+
+        try {
+          await sendFile(
+            preview.file
+          );
+
+          URL.revokeObjectURL(
+            preview.url
+          );
+
+          setCameraPreview(
+            null
+          );
+        } finally {
+          setCameraBusy(
+            false
+          );
+        }
+      },
+      [
+        cameraBusy,
+        cameraPreview,
         sendFile,
       ]
     );
@@ -3211,6 +3350,52 @@ export default function WebChatPage() {
           )
       );
     };
+
+  const timeline =
+    useMemo(
+      () => {
+        const messageItems =
+          messages.map(
+            (message) => ({
+              kind:
+                "message" as const,
+
+              order:
+                message.order,
+
+              item:
+                message,
+            })
+          );
+
+        const fileItems =
+          files.map(
+            (file) => ({
+              kind:
+                "file" as const,
+
+              order:
+                file.order,
+
+              item:
+                file,
+            })
+          );
+
+        return [
+          ...messageItems,
+          ...fileItems,
+        ].sort(
+          (a, b) =>
+            a.order -
+            b.order
+        );
+      },
+      [
+        messages,
+        files,
+      ]
+    );
 
   /*
    * =======================================================
@@ -3343,6 +3528,18 @@ export default function WebChatPage() {
       peerRef.current?.destroy();
 
       revokeObjectUrls();
+
+      if (
+        cameraPreview
+      ) {
+        URL.revokeObjectURL(
+          cameraPreview.url
+        );
+
+        setCameraPreview(
+          null
+        );
+      }
 
       /*
        * Host destroys temporary relay room.
@@ -4077,146 +4274,161 @@ export default function WebChatPage() {
               </div>
             )}
 
-          {messages.map(
+          {timeline.map(
             (
-              message
+              entry
             ) => {
               if (
-                message.sender ===
-                "system"
+                entry.kind ===
+                "message"
               ) {
+                const message =
+                  entry.item;
+
+                if (
+                  message.sender ===
+                  "system"
+                ) {
+                  return (
+                    <div
+                      className="p2p-system"
+                      key={
+                        message.id
+                      }
+                    >
+                      <span>
+                        {
+                          message.text
+                        }
+                      </span>
+                    </div>
+                  );
+                }
+
                 return (
                   <div
-                    className="p2p-system"
+                    className={`p2p-message ${message.sender}`}
                     key={
                       message.id
                     }
                   >
+                    <div className={styles.bubbleInner}>
+                      <span className={styles.messageText}>
+                        {
+                          message.text
+                        }
+                      </span>
 
-                    <span>
-                      {
-                        message.text
-                      }
-                    </span>
-
+                      <time className={styles.bubbleTime}>
+                        {
+                          message.time
+                        }
+                      </time>
+                    </div>
                   </div>
                 );
               }
 
+              const file =
+                entry.item;
+
               return (
                 <div
-                  className={`p2p-message ${message.sender}`}
+                  className={`p2p-message ${file.sender}`}
                   key={
-                    message.id
+                    file.id
                   }
                 >
+                  <div className={`${styles.bubbleInner} ${styles.mediaBubble}`}>
+                    {file.mime.startsWith(
+                      "image/"
+                    ) ? (
+                      <>
+                        <a
+                          href={
+                            file.url
+                          }
+                          target="_blank"
+                          rel="noreferrer"
+                          className={styles.imageLink}
+                        >
+                          <img
+                            src={
+                              file.url
+                            }
+                            alt={
+                              file.name
+                            }
+                            className={
+                              styles.chatImage
+                            }
+                          />
+                        </a>
 
-                  <div>
-                    {
-                      message.text
-                    }
+                        <div className={styles.mediaMeta}>
+                          <span>
+                            Photo
+                          </span>
+
+                          <time className={styles.bubbleTime}>
+                            {
+                              file.time
+                            }
+                          </time>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <a
+                          href={
+                            file.url
+                          }
+                          download={
+                            file.name
+                          }
+                          className={styles.documentCard}
+                        >
+                          <span className={styles.documentIcon}>
+                            ↧
+                          </span>
+
+                          <span className={styles.documentInfo}>
+                            <strong>
+                              {
+                                file.name
+                              }
+                            </strong>
+
+                            <small>
+                              {(
+                                file.size /
+                                1024 /
+                                1024
+                              ).toFixed(
+                                2
+                              )}{" "}
+                              MB
+                            </small>
+                          </span>
+                        </a>
+
+                        <div className={styles.mediaMeta}>
+                          <span>
+                            File
+                          </span>
+
+                          <time className={styles.bubbleTime}>
+                            {
+                              file.time
+                            }
+                          </time>
+                        </div>
+                      </>
+                    )}
                   </div>
-
-                  <time>
-                    {
-                      message.time
-                    }
-                  </time>
-
                 </div>
               );
             }
-          )}
-
-          {files.map(
-            (
-              file
-            ) => (
-              <div
-                className={`p2p-message ${file.sender}`}
-                key={
-                  file.id
-                }
-              >
-
-                <div className={styles.fileCard}>
-
-                  {file.mime.startsWith(
-                    "image/"
-                  ) ? (
-                    <>
-
-                      <img
-                        src={
-                          file.url
-                        }
-                        alt={
-                          file.name
-                        }
-                        className={
-                          styles.chatImage
-                        }
-                      />
-
-                      <a
-                        href={
-                          file.url
-                        }
-                        download={
-                          file.name
-                        }
-                      >
-                        Download photo
-                      </a>
-
-                    </>
-                  ) : (
-                    <>
-
-                      <strong>
-                        {
-                          file.name
-                        }
-                      </strong>
-
-                      <small>
-
-                        {(
-                          file.size /
-                          1024 /
-                          1024
-                        ).toFixed(
-                          2
-                        )}{" "}
-
-                        MB
-
-                      </small>
-
-                      <a
-                        href={
-                          file.url
-                        }
-                        download={
-                          file.name
-                        }
-                      >
-                        Download file
-                      </a>
-
-                    </>
-                  )}
-
-                </div>
-
-                <time>
-                  {
-                    file.time
-                  }
-                </time>
-
-              </div>
-            )
           )}
 
           <div
@@ -4330,6 +4542,90 @@ export default function WebChatPage() {
                   {cameraBusy
                     ? "Saving…"
                     : "Take photo"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {cameraPreview && (
+          <div
+            className={
+              styles.cameraOverlay
+            }
+            role="dialog"
+            aria-modal="true"
+            aria-label="Photo preview"
+          >
+            <div
+              className={
+                styles.previewPanel
+              }
+            >
+              <div className={styles.previewHeader}>
+                <strong>
+                  Preview photo
+                </strong>
+
+                <span>
+                  Review before sending
+                </span>
+              </div>
+
+              <img
+                src={
+                  cameraPreview.url
+                }
+                alt="Camera preview"
+                className={
+                  styles.previewImage
+                }
+              />
+
+              <div
+                className={
+                  styles.previewActions
+                }
+              >
+                <button
+                  type="button"
+                  onClick={
+                    cancelCameraPreview
+                  }
+                  disabled={
+                    cameraBusy
+                  }
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    void retakeCameraPhoto();
+                  }}
+                  disabled={
+                    cameraBusy
+                  }
+                >
+                  Retake
+                </button>
+
+                <button
+                  type="button"
+                  className={
+                    styles.previewSend
+                  }
+                  onClick={() => {
+                    void sendCameraPreview();
+                  }}
+                  disabled={
+                    cameraBusy
+                  }
+                >
+                  {cameraBusy
+                    ? "Sending…"
+                    : "Send"}
                 </button>
               </div>
             </div>

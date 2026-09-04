@@ -3979,3 +3979,112 @@ h2 { font-size: clamp(38px, 4vw, 54px); line-height: 1.08; margin: 0 0 20px; let
     max-height: 100vh;
   }
 }
+
+
+/* =========================================================
+   WHOLEGACY V8 BEIGE MESSENGER
+   ========================================================= */
+
+.p2p-chat-shell {
+  background: #eee7da;
+}
+
+.p2p-chat-header {
+  border-bottom: 1px solid #d8cdbb;
+  background: #f5f0e6;
+  box-shadow: 0 1px 8px rgba(73, 63, 47, .06);
+}
+
+.p2p-messages {
+  background:
+    radial-gradient(circle at 12px 12px, rgba(112, 96, 72, .035) 1px, transparent 1.5px) 0 0 / 24px 24px,
+    #eee7da;
+}
+
+.p2p-message {
+  margin-top: 3px;
+  margin-bottom: 3px;
+  max-width: min(76%, 560px);
+}
+
+.p2p-message > div {
+  position: relative;
+  border: 0;
+  border-radius: 12px;
+  box-shadow: 0 1px 1px rgba(65, 55, 42, .08);
+}
+
+.p2p-message.me {
+  margin-left: auto;
+  margin-right: 0;
+}
+
+.p2p-message.me > div {
+  background: #d8c9ad;
+  color: #312d27;
+  border-bottom-right-radius: 4px;
+}
+
+.p2p-message.peer {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+.p2p-message.peer > div {
+  background: #fbf7ef;
+  color: #312d27;
+  border-bottom-left-radius: 4px;
+}
+
+.p2p-system {
+  margin: 10px auto;
+  text-align: center;
+}
+
+.p2p-system span {
+  display: inline-block;
+  padding: 5px 9px;
+  border: 1px solid rgba(116, 100, 74, .13);
+  border-radius: 999px;
+  background: rgba(248, 243, 233, .88);
+  color: #756c5e;
+  font-size: 9px;
+  box-shadow: 0 1px 2px rgba(65, 55, 42, .04);
+}
+
+.p2p-composer {
+  border-top: 1px solid #d8cdbb;
+  background: #f5f0e6;
+}
+
+.p2p-composer input {
+  border: 1px solid #d7ccba;
+  border-radius: 999px;
+  background: #fffdf8;
+  color: #302c26;
+  outline: none;
+}
+
+.p2p-composer input:focus {
+  border-color: #a99b83;
+  box-shadow: 0 0 0 2px rgba(113, 98, 75, .08);
+}
+
+.p2p-composer button {
+  border-radius: 999px;
+}
+
+@media (max-width: 700px) {
+  .p2p-message {
+    max-width: 84%;
+  }
+
+  .p2p-message > div {
+    font-size: 14px;
+  }
+
+  .p2p-composer {
+    background: rgba(245, 240, 230, .97);
+    backdrop-filter: blur(12px);
+  }
+}

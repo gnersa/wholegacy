@@ -266,3 +266,201 @@
     touch-action: manipulation;
   }
 }
+
+
+/* =========================================================
+   WHOLEGACY V8 CHAT UI
+   Messenger-style layout with WHOLEGACY beige palette
+   ========================================================= */
+
+.bubbleInner {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  max-width: 100%;
+}
+
+.messageText {
+  min-width: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.bubbleTime {
+  flex: 0 0 auto;
+  margin-left: 2px;
+  color: rgba(67, 60, 49, .58);
+  font-size: 9px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.mediaBubble {
+  display: block;
+  padding: 5px !important;
+  overflow: hidden;
+}
+
+.imageLink {
+  display: block;
+  color: inherit;
+}
+
+.chatImage {
+  display: block;
+  width: min(340px, 100%);
+  max-height: 430px;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+.mediaMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 7px 6px 3px;
+  color: rgba(67, 60, 49, .72);
+  font-size: 10px;
+}
+
+.documentCard {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: min(290px, 68vw);
+  padding: 11px 12px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, .52);
+  color: inherit !important;
+  text-decoration: none !important;
+}
+
+.documentIcon {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(94, 82, 64, .11);
+  font-size: 20px;
+}
+
+.documentInfo {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.documentInfo strong {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.documentInfo small {
+  color: rgba(67, 60, 49, .58);
+  font-size: 9px;
+}
+
+.previewPanel {
+  width: min(720px, 100%);
+  max-height: calc(100dvh - 28px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 18px;
+  background: #f2ecdf;
+  box-shadow: 0 18px 65px rgba(0, 0, 0, .28);
+}
+
+.previewHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  color: #3e392f;
+}
+
+.previewHeader strong {
+  font-size: 15px;
+}
+
+.previewHeader span {
+  color: #7c7365;
+  font-size: 11px;
+}
+
+.previewImage {
+  width: 100%;
+  max-height: 68dvh;
+  object-fit: contain;
+  border-radius: 12px;
+  background: #1b1a18;
+}
+
+.previewActions {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.15fr;
+  gap: 8px;
+}
+
+.previewActions button {
+  min-height: 48px;
+  border: 1px solid #cfc4b2;
+  border-radius: 999px;
+  background: #f8f4eb;
+  color: #403a31;
+  font: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.previewActions button:disabled {
+  opacity: .48;
+  cursor: default;
+}
+
+.previewActions .previewSend {
+  border-color: #655a49;
+  background: #655a49;
+  color: #fffaf0;
+}
+
+@media (max-width: 700px) {
+  .bubbleInner {
+    gap: 6px;
+  }
+
+  .chatImage {
+    width: min(76vw, 330px);
+    max-height: 52dvh;
+  }
+
+  .documentCard {
+    min-width: min(70vw, 280px);
+  }
+
+  .previewPanel {
+    width: 100%;
+    max-height: 100dvh;
+    padding:
+      12px
+      12px
+      max(12px, env(safe-area-inset-bottom));
+    border-radius: 14px;
+  }
+
+  .previewImage {
+    max-height: 66dvh;
+  }
+
+  .previewActions {
+    grid-template-columns: 1fr 1fr 1.1fr;
+  }
+}
