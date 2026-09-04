@@ -3849,9 +3849,9 @@ export default function WebChatPage() {
                 className={
                   styles.enterButton
                 }
-                onClick={
-                  verifyPinAndJoin
-                }
+                onClick={() => {
+                  void verifyPinAndJoin();
+                }}
                 disabled={
                   connecting ||
                   joinPin.length <
