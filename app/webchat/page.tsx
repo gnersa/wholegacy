@@ -20,8 +20,21 @@ type ChatMessage = {
   time: string;
 };
 
+type SharedFile = {
+  id: string;
+  name: string;
+  mime: string;
+  size: number;
+  url: string;
+  sender: "me" | "peer";
+  time: string;
+};
+
 const ALPHABET =
   "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+const MAX_FILE_SIZE =
+  10 * 1024 * 1024;
 
 const PEER_OPTIONS = {
   debug: 2,
@@ -29,17 +42,46 @@ const PEER_OPTIONS = {
   config: {
     iceServers: [
       {
-        urls: "stun:stun.l.google.com:19302",
+        urls:
+          "stun:stun.l.google.com:19302",
       },
       {
-        urls: "stun:stun1.l.google.com:19302",
+        urls:
+          "stun:stun1.l.google.com:19302",
       },
+
+      /*
+       * ==================================================
+       * TURN SERVER
+       * ==================================================
+       *
+       * Untuk koneksi lintas jaringan yang stabil,
+       * tambahkan TURN server di sini.
+       *
+       * Contoh:
+       *
+       * {
+       *   urls: "turn:turn.wholegacy.com:3478",
+       *   username: "TEMP_USERNAME",
+       *   credential: "TEMP_PASSWORD",
+       * },
+       *
+       * {
+       *   urls:
+       *     "turn:turn.wholegacy.com:3478?transport=tcp",
+       *   username: "TEMP_USERNAME",
+       *   credential: "TEMP_PASSWORD",
+       * },
+       */
     ],
   },
 };
 
-function randomString(length: number) {
-  const bytes = new Uint8Array(length);
+function randomString(
+  length: number
+) {
+  const bytes =
+    new Uint8Array(length);
 
   crypto.getRandomValues(bytes);
 
@@ -47,7 +89,8 @@ function randomString(length: number) {
     bytes,
     (byte) =>
       ALPHABET[
-        byte % ALPHABET.length
+        byte %
+          ALPHABET.length
       ]
   ).join("");
 }
@@ -64,29 +107,49 @@ function getTime() {
 
 export default function WebChatPage() {
   /*
-   * =====================================================
+   * ======================================================
    * STATE
-   * =====================================================
+   * ======================================================
    */
 
-  const [mode, setMode] =
-    useState<Mode>("choose");
-
-  const [roomId, setRoomId] =
-    useState("");
-
-  const [password, setPassword] =
-    useState("");
-
-  const [hostPeerId, setHostPeerId] =
-    useState("");
-
-  const [joinRoom, setJoinRoom] =
-    useState("");
+  const [
+    mode,
+    setMode,
+  ] = useState<Mode>(
+    "choose"
+  );
 
   const [
-    joinPassword,
-    setJoinPassword,
+    roomId,
+    setRoomId,
+  ] = useState("");
+
+  const [
+    hostPeerId,
+    setHostPeerId,
+  ] = useState("");
+
+  /*
+   * Host PIN.
+   */
+
+  const [
+    pin,
+    setPin,
+  ] = useState("");
+
+  /*
+   * Guest PIN.
+   */
+
+  const [
+    joinPin,
+    setJoinPin,
+  ] = useState("");
+
+  const [
+    joinRoom,
+    setJoinRoom,
   ] = useState("");
 
   const [
@@ -99,100 +162,147 @@ export default function WebChatPage() {
     setConnecting,
   ] = useState(false);
 
-  const [draft, setDraft] =
-    useState("");
+  const [
+    draft,
+    setDraft,
+  ] = useState("");
 
-  const [copied, setCopied] =
-    useState(false);
+  const [
+    copied,
+    setCopied,
+  ] = useState(false);
 
-  const [messages, setMessages] =
-    useState<ChatMessage[]>([]);
+  const [
+    copiedPin,
+    setCopiedPin,
+  ] = useState(false);
+
+  const [
+    messages,
+    setMessages,
+  ] = useState<
+    ChatMessage[]
+  >([]);
+
+  const [
+    files,
+    setFiles,
+  ] = useState<
+    SharedFile[]
+  >([]);
 
   /*
-   * =====================================================
+   * ======================================================
    * REFS
-   * =====================================================
+   * ======================================================
    */
 
   const peerRef =
-    useRef<Peer | null>(null);
-
-  const connectionRef =
-    useRef<DataConnection | null>(
+    useRef<Peer | null>(
       null
     );
+
+  const connectionRef =
+    useRef<
+      DataConnection | null
+    >(null);
 
   const roomIdRef =
     useRef("");
 
-  const passwordRef =
+  const pinRef =
     useRef("");
 
   const roleRef =
-    useRef<"host" | "guest" | null>(
+    useRef<
+      "host" |
+      "guest" |
       null
-    );
+    >(null);
 
   const connectTimeoutRef =
-    useRef<ReturnType<
-      typeof setTimeout
-    > | null>(null);
+    useRef<
+      ReturnType<
+        typeof setTimeout
+      > | null
+    >(null);
 
   const authTimeoutRef =
-    useRef<ReturnType<
-      typeof setTimeout
-    > | null>(null);
+    useRef<
+      ReturnType<
+        typeof setTimeout
+      > | null
+    >(null);
+
+  const fileInputRef =
+    useRef<
+      HTMLInputElement | null
+    >(null);
+
+  const cameraInputRef =
+    useRef<
+      HTMLInputElement | null
+    >(null);
 
   /*
-   * =====================================================
-   * URL QUERY
-   * =====================================================
+   * Store object URLs so cleanup
+   * does not need to depend on files state.
    */
 
-  const query = useMemo(() => {
-    if (
-      typeof window === "undefined"
-    ) {
-      return null;
-    }
-
-    return new URLSearchParams(
-      window.location.search
-    );
-  }, []);
+  const objectUrlsRef =
+    useRef<string[]>([]);
 
   /*
-   * =====================================================
-   * READ INVITATION
-   * =====================================================
+   * ======================================================
+   * INVITATION QUERY
+   * ======================================================
    */
+
+  const query =
+    useMemo(() => {
+      if (
+        typeof window ===
+        "undefined"
+      ) {
+        return null;
+      }
+
+      return new URLSearchParams(
+        window.location.search
+      );
+    }, []);
 
   useEffect(() => {
     const queryRoom =
-      query?.get("room") || "";
+      query?.get("room") ||
+      "";
 
     const queryPeer =
-      query?.get("peer") || "";
+      query?.get("peer") ||
+      "";
 
     if (
       queryRoom &&
       queryPeer
     ) {
-      const cleanRoom =
-        queryRoom.toUpperCase();
+      setJoinRoom(
+        queryRoom.toUpperCase()
+      );
 
-      setJoinRoom(cleanRoom);
+      setHostPeerId(
+        queryPeer
+      );
 
-      setHostPeerId(queryPeer);
-
-      setMode("join");
+      setMode(
+        "join"
+      );
     }
   }, [query]);
 
   /*
-   * =====================================================
+   * ======================================================
    * SYSTEM MESSAGE
-   * =====================================================
+   * ======================================================
    */
 
   const addSystem =
@@ -206,7 +316,8 @@ export default function WebChatPage() {
               id:
                 crypto.randomUUID(),
 
-              sender: "system",
+              sender:
+                "system",
 
               text,
 
@@ -220,9 +331,9 @@ export default function WebChatPage() {
     );
 
   /*
-   * =====================================================
+   * ======================================================
    * CLEAR TIMERS
-   * =====================================================
+   * ======================================================
    */
 
   const clearTimers =
@@ -251,30 +362,50 @@ export default function WebChatPage() {
     }, []);
 
   /*
-   * =====================================================
-   * DATA CONNECTION
-   * =====================================================
+   * ======================================================
+   * CLEAN OBJECT URL
+   * ======================================================
+   */
+
+  const revokeObjectUrls =
+    useCallback(() => {
+      objectUrlsRef.current.forEach(
+        (url) => {
+          URL.revokeObjectURL(
+            url
+          );
+        }
+      );
+
+      objectUrlsRef.current =
+        [];
+    }, []);
+
+  /*
+   * ======================================================
+   * ATTACH CONNECTION
+   * ======================================================
    */
 
   const attachConnection =
     useCallback(
       (
-        connection: DataConnection,
-        role: "host" | "guest",
-        guestRoom?: string,
-        guestPassword?: string
-      ) => {
-        console.log(
-          "[WHOLEGACY P2P] attaching",
-          role,
-          connection.peer
-        );
+        connection:
+          DataConnection,
 
+        role:
+          | "host"
+          | "guest",
+
+        guestRoom?: string,
+
+        guestPin?: string
+      ) => {
         connectionRef.current =
           connection;
 
         /*
-         * Prevent infinite connecting.
+         * WebRTC timeout.
          */
 
         connectTimeoutRef.current =
@@ -282,32 +413,31 @@ export default function WebChatPage() {
             if (
               !connection.open
             ) {
-              console.error(
-                "[WHOLEGACY P2P] WebRTC connection timeout"
-              );
-
               connection.close();
 
-              setConnecting(false);
-              setConnected(false);
+              setConnecting(
+                false
+              );
+
+              setConnected(
+                false
+              );
 
               addSystem(
-                "Connection timed out. The browsers could not establish a direct WebRTC connection."
+                "Connection timed out. The browsers could not establish a private connection."
               );
             }
           }, 15000);
 
         /*
-         * WEBRTC DATA CHANNEL OPEN
+         * ==================================================
+         * DATA CONNECTION OPEN
+         * ==================================================
          */
 
         connection.on(
           "open",
           () => {
-            console.log(
-              "[WHOLEGACY P2P] DataConnection OPEN"
-            );
-
             if (
               connectTimeoutRef.current
             ) {
@@ -320,136 +450,92 @@ export default function WebChatPage() {
             }
 
             /*
-             * GUEST
-             *
-             * Send room authentication
-             * only AFTER WebRTC connection
-             * is completely open.
+             * Guest sends PIN only after
+             * DataConnection is open.
              */
 
             if (
-              role === "guest"
+              role ===
+              "guest"
             ) {
-              console.log(
-                "[WHOLEGACY P2P] Sending authentication"
-              );
-
               connection.send({
-                type: "auth",
+                type:
+                  "auth",
 
                 room:
                   guestRoom?.toUpperCase() ||
                   "",
 
-                password:
-                  guestPassword ||
+                pin:
+                  guestPin ||
                   "",
               });
 
               addSystem(
-                "Peer connected. Verifying room access…"
+                "Private connection established. Verifying PIN…"
               );
-
-              /*
-               * Authentication timeout.
-               */
 
               authTimeoutRef.current =
                 setTimeout(() => {
-                  if (
-                    !connected
-                  ) {
-                    console.error(
-                      "[WHOLEGACY P2P] Authentication timeout"
-                    );
+                  setConnecting(
+                    false
+                  );
 
-                    setConnecting(
-                      false
-                    );
-
-                    addSystem(
-                      "Room authentication timed out."
-                    );
-                  }
+                  addSystem(
+                    "PIN verification timed out."
+                  );
                 }, 10000);
 
               return;
             }
 
-            /*
-             * HOST
-             */
-
             addSystem(
-              "Peer connection established. Waiting for authentication…"
+              "Peer connected. Waiting for PIN verification…"
             );
           }
         );
 
         /*
-         * =================================================
+         * ==================================================
          * RECEIVE DATA
-         * =================================================
+         * ==================================================
          */
 
         connection.on(
           "data",
           (raw) => {
             const data =
-              raw as {
-                type?: string;
-                room?: string;
-                password?: string;
-                id?: string;
-                text?: string;
-                time?: string;
-              };
-
-            console.log(
-              "[WHOLEGACY P2P] DATA",
-              data.type
-            );
+              raw as any;
 
             /*
-             * =============================================
+             * ==============================================
              * HOST AUTHENTICATION
-             * =============================================
+             * ==============================================
              */
 
             if (
-              role === "host" &&
-              data.type ===
+              role ===
+                "host" &&
+              data?.type ===
                 "auth"
             ) {
               const receivedRoom =
-                (
-                  data.room || ""
+                String(
+                  data.room ||
+                    ""
                 ).toUpperCase();
 
-              const receivedPassword =
-                data.password ||
-                "";
-
-              console.log(
-                "[WHOLEGACY P2P] AUTH ROOM",
-                receivedRoom
-              );
-
-              console.log(
-                "[WHOLEGACY P2P] EXPECT ROOM",
-                roomIdRef.current
-              );
+              const receivedPin =
+                String(
+                  data.pin ||
+                    ""
+                );
 
               const valid =
                 receivedRoom ===
                   roomIdRef.current &&
-                receivedPassword ===
-                  passwordRef.current;
-
-              console.log(
-                "[WHOLEGACY P2P] AUTH VALID:",
-                valid
-              );
+                receivedPin ===
+                  pinRef.current;
 
               if (valid) {
                 connection.send({
@@ -475,7 +561,7 @@ export default function WebChatPage() {
                 });
 
                 addSystem(
-                  "A connection attempt was rejected because the room ID or password was incorrect."
+                  "A connection attempt was rejected because the PIN was incorrect."
                 );
 
                 setTimeout(
@@ -490,20 +576,17 @@ export default function WebChatPage() {
             }
 
             /*
-             * =============================================
+             * ==============================================
              * GUEST AUTH SUCCESS
-             * =============================================
+             * ==============================================
              */
 
             if (
-              role === "guest" &&
-              data.type ===
+              role ===
+                "guest" &&
+              data?.type ===
                 "auth-ok"
             ) {
-              console.log(
-                "[WHOLEGACY P2P] Authentication successful"
-              );
-
               if (
                 authTimeoutRef.current
               ) {
@@ -536,22 +619,27 @@ export default function WebChatPage() {
                 false
               );
 
+              setJoinPin(
+                ""
+              );
+
               addSystem(
-                "Room access verified. Private chat connected."
+                "PIN accepted. Private chat connected."
               );
 
               return;
             }
 
             /*
-             * =============================================
-             * GUEST AUTH FAILURE
-             * =============================================
+             * ==============================================
+             * GUEST AUTH FAILED
+             * ==============================================
              */
 
             if (
-              role === "guest" &&
-              data.type ===
+              role ===
+                "guest" &&
+              data?.type ===
                 "auth-failed"
             ) {
               if (
@@ -573,8 +661,12 @@ export default function WebChatPage() {
                 false
               );
 
+              setJoinPin(
+                ""
+              );
+
               addSystem(
-                "Incorrect room password."
+                "Incorrect PIN. Please try again."
               );
 
               setTimeout(
@@ -588,13 +680,13 @@ export default function WebChatPage() {
             }
 
             /*
-             * =============================================
-             * CHAT MESSAGE
-             * =============================================
+             * ==============================================
+             * TEXT CHAT
+             * ==============================================
              */
 
             if (
-              data.type ===
+              data?.type ===
                 "chat" &&
               typeof data.text ===
                 "string"
@@ -612,7 +704,7 @@ export default function WebChatPage() {
                       "peer",
 
                     text:
-                      data.text || "",
+                      data.text,
 
                     time:
                       data.time ||
@@ -620,24 +712,95 @@ export default function WebChatPage() {
                   },
                 ]
               );
+
+              return;
+            }
+
+            /*
+             * ==============================================
+             * FILE / PHOTO
+             * ==============================================
+             */
+
+            if (
+              data?.type ===
+                "file" &&
+              data.buffer
+            ) {
+              try {
+                const blob =
+                  new Blob(
+                    [
+                      data.buffer,
+                    ],
+                    {
+                      type:
+                        data.mime ||
+                        "application/octet-stream",
+                    }
+                  );
+
+                const url =
+                  URL.createObjectURL(
+                    blob
+                  );
+
+                objectUrlsRef.current.push(
+                  url
+                );
+
+                setFiles(
+                  (current) => [
+                    ...current,
+
+                    {
+                      id:
+                        data.id ||
+                        crypto.randomUUID(),
+
+                      name:
+                        data.name ||
+                        "file",
+
+                      mime:
+                        data.mime ||
+                        "application/octet-stream",
+
+                      size:
+                        data.size ||
+                        blob.size,
+
+                      url,
+
+                      sender:
+                        "peer",
+
+                      time:
+                        data.time ||
+                        getTime(),
+                    },
+                  ]
+                );
+              } catch {
+                addSystem(
+                  "Received file could not be opened."
+                );
+              }
+
+              return;
             }
           }
         );
 
         /*
-         * =================================================
-         * CONNECTION ERROR
-         * =================================================
+         * ==================================================
+         * ERROR
+         * ==================================================
          */
 
         connection.on(
           "error",
-          (error) => {
-            console.error(
-              "[WHOLEGACY P2P] DataConnection ERROR",
-              error
-            );
-
+          () => {
             clearTimers();
 
             setConnecting(
@@ -655,18 +818,14 @@ export default function WebChatPage() {
         );
 
         /*
-         * =================================================
-         * CONNECTION CLOSED
-         * =================================================
+         * ==================================================
+         * CLOSE
+         * ==================================================
          */
 
         connection.on(
           "close",
           () => {
-            console.log(
-              "[WHOLEGACY P2P] DataConnection CLOSED"
-            );
-
             clearTimers();
 
             if (
@@ -685,78 +844,81 @@ export default function WebChatPage() {
               false
             );
 
-            addSystem(
-              "Peer disconnected."
-            );
+            /*
+             * Don't show Peer disconnected
+             * when authentication itself failed.
+             */
           }
         );
       },
       [
         addSystem,
         clearTimers,
-        connected,
         joinRoom,
       ]
     );
 
   /*
-   * =====================================================
+   * ======================================================
    * CREATE ROOM
-   * =====================================================
+   * ======================================================
    */
 
   const createRoom =
     async () => {
-      /*
-       * Destroy previous instance
-       */
+      const cleanPin =
+        pin.trim();
+
+      if (
+        !/^\d{4,6}$/.test(
+          cleanPin
+        )
+      ) {
+        return;
+      }
 
       peerRef.current?.destroy();
 
-      peerRef.current = null;
+      peerRef.current =
+        null;
 
       connectionRef.current =
         null;
 
       clearTimers();
 
+      revokeObjectUrls();
+
       setMessages([]);
 
-      setConnected(false);
+      setFiles([]);
 
-      setConnecting(true);
+      setConnected(
+        false
+      );
 
-      setHostPeerId("");
+      setConnecting(
+        true
+      );
 
-      /*
-       * Generate room credentials
-       */
+      setHostPeerId(
+        ""
+      );
 
       const newRoom =
         randomString(8);
 
-      const newPassword =
-        randomString(10);
-
-      /*
-       * Store immediately in refs.
-       */
-
       roomIdRef.current =
         newRoom;
 
-      passwordRef.current =
-        newPassword;
+      pinRef.current =
+        cleanPin;
 
       roleRef.current =
         "host";
 
       setRoomId(
         newRoom
-      );
-
-      setPassword(
-        newPassword
       );
 
       setMode(
@@ -779,9 +941,7 @@ export default function WebChatPage() {
           peer;
 
         /*
-         * IMPORTANT:
-         * connection listener is attached
-         * immediately.
+         * Incoming guest.
          */
 
         peer.on(
@@ -790,13 +950,8 @@ export default function WebChatPage() {
             connection:
               DataConnection
           ) => {
-            console.log(
-              "[WHOLEGACY P2P] Incoming peer:",
-              connection.peer
-            );
-
             /*
-             * Only one conversation.
+             * Only one active peer.
              */
 
             if (
@@ -816,17 +971,12 @@ export default function WebChatPage() {
         );
 
         /*
-         * Signaling server ready.
+         * Signaling ready.
          */
 
         peer.on(
           "open",
           (id) => {
-            console.log(
-              "[WHOLEGACY P2P] HOST PeerJS ready:",
-              id
-            );
-
             setHostPeerId(
               id
             );
@@ -836,16 +986,7 @@ export default function WebChatPage() {
             );
 
             addSystem(
-              "Private room ready. Share the invite link and password."
-            );
-          }
-        );
-
-        peer.on(
-          "disconnected",
-          () => {
-            console.warn(
-              "[WHOLEGACY P2P] Host disconnected from signaling server"
+              "Private room ready. Share the link and PIN."
             );
           }
         );
@@ -853,12 +994,6 @@ export default function WebChatPage() {
         peer.on(
           "error",
           (error) => {
-            console.error(
-              "[WHOLEGACY P2P] HOST PEER ERROR",
-              error.type,
-              error
-            );
-
             setConnecting(
               false
             );
@@ -868,7 +1003,7 @@ export default function WebChatPage() {
               "network"
             ) {
               addSystem(
-                "Unable to connect to the PeerJS signaling server."
+                "Unable to connect to the signaling server."
               );
 
               return;
@@ -879,24 +1014,21 @@ export default function WebChatPage() {
             );
           }
         );
-      } catch (error) {
-        console.error(
-          "[WHOLEGACY P2P] Create room failed",
-          error
+      } catch {
+        setConnecting(
+          false
         );
 
-        setConnecting(false);
-
         addSystem(
-          "Unable to initialize PeerJS."
+          "Unable to initialize private room."
         );
       }
     };
 
   /*
-   * =====================================================
+   * ======================================================
    * JOIN ROOM
-   * =====================================================
+   * ======================================================
    */
 
   const joinRoomNow =
@@ -906,23 +1038,21 @@ export default function WebChatPage() {
           .trim()
           .toUpperCase();
 
-      const cleanPassword =
-        joinPassword.trim();
+      const cleanPin =
+        joinPin.trim();
 
       const cleanHostPeer =
         hostPeerId.trim();
 
       if (
         !cleanRoom ||
-        !cleanPassword ||
+        !/^\d{4,6}$/.test(
+          cleanPin
+        ) ||
         !cleanHostPeer
       ) {
         return;
       }
-
-      /*
-       * Clean previous peer.
-       */
 
       peerRef.current?.destroy();
 
@@ -934,9 +1064,13 @@ export default function WebChatPage() {
 
       clearTimers();
 
-      setConnecting(true);
+      setConnecting(
+        true
+      );
 
-      setConnected(false);
+      setConnected(
+        false
+      );
 
       roleRef.current =
         "guest";
@@ -944,19 +1078,12 @@ export default function WebChatPage() {
       roomIdRef.current =
         cleanRoom;
 
-      passwordRef.current =
-        cleanPassword;
-
       try {
         const {
           default: PeerJS,
         } = await import(
           "peerjs"
         );
-
-        /*
-         * Create GUEST PeerJS instance.
-         */
 
         const peer =
           new PeerJS(
@@ -967,75 +1094,20 @@ export default function WebChatPage() {
           peer;
 
         /*
-         * General errors.
-         */
-
-        peer.on(
-          "error",
-          (error) => {
-            console.error(
-              "[WHOLEGACY P2P] GUEST PEER ERROR",
-              error.type,
-              error
-            );
-
-            setConnecting(
-              false
-            );
-
-            setConnected(
-              false
-            );
-
-            switch (
-              error.type
-            ) {
-              case "peer-unavailable":
-                addSystem(
-                  "The room creator is no longer online or the room has expired."
-                );
-                break;
-
-              case "network":
-                addSystem(
-                  "Unable to reach the PeerJS signaling server."
-                );
-                break;
-
-              case "webrtc":
-                addSystem(
-                  "The browsers could not establish a WebRTC connection."
-                );
-                break;
-
-              default:
-                addSystem(
-                  `Connection error: ${error.type}`
-                );
-            }
-          }
-        );
-
-        /*
-         * CRITICAL FIX:
-         *
-         * DO NOT call peer.connect()
-         * until GUEST PeerJS itself is OPEN.
+         * Guest signaling timeout.
          */
 
         const peerOpenTimeout =
           setTimeout(() => {
-            if (!peer.open) {
-              console.error(
-                "[WHOLEGACY P2P] Guest signaling timeout"
-              );
-
+            if (
+              !peer.open
+            ) {
               setConnecting(
                 false
               );
 
               addSystem(
-                "Could not connect to the signaling server."
+                "Could not reach the private room."
               );
 
               peer.destroy();
@@ -1044,25 +1116,10 @@ export default function WebChatPage() {
 
         peer.on(
           "open",
-          (guestPeerId) => {
+          () => {
             clearTimeout(
               peerOpenTimeout
             );
-
-            console.log(
-              "[WHOLEGACY P2P] GUEST PeerJS ready:",
-              guestPeerId
-            );
-
-            console.log(
-              "[WHOLEGACY P2P] Connecting to HOST:",
-              cleanHostPeer
-            );
-
-            /*
-             * Only now create WebRTC
-             * DataConnection.
-             */
 
             const connection =
               peer.connect(
@@ -1080,30 +1137,287 @@ export default function WebChatPage() {
               connection,
               "guest",
               cleanRoom,
-              cleanPassword
+              cleanPin
             );
           }
         );
-      } catch (error) {
-        console.error(
-          "[WHOLEGACY P2P] Join failed",
-          error
-        );
 
+        peer.on(
+          "error",
+          (error) => {
+            clearTimeout(
+              peerOpenTimeout
+            );
+
+            setConnecting(
+              false
+            );
+
+            setConnected(
+              false
+            );
+
+            switch (
+              error.type
+            ) {
+              case "peer-unavailable":
+                addSystem(
+                  "This private room is no longer available."
+                );
+                break;
+
+              case "network":
+                addSystem(
+                  "Unable to reach the signaling server."
+                );
+                break;
+
+              case "webrtc":
+                addSystem(
+                  "The browsers could not establish a private connection."
+                );
+                break;
+
+              default:
+                addSystem(
+                  `Connection error: ${error.type}`
+                );
+            }
+          }
+        );
+      } catch {
         setConnecting(
           false
         );
 
         addSystem(
-          "Unable to initialize PeerJS."
+          "Unable to open private room."
         );
       }
     };
 
   /*
-   * =====================================================
+   * ======================================================
+   * PIN KEYPAD
+   * ======================================================
+   */
+
+  const pressPin =
+    (
+      digit: string
+    ) => {
+      if (
+        connecting
+      ) {
+        return;
+      }
+
+      setJoinPin(
+        (current) => {
+          if (
+            current.length >=
+            6
+          ) {
+            return current;
+          }
+
+          return (
+            current +
+            digit
+          );
+        }
+      );
+    };
+
+  const deletePin =
+    () => {
+      if (
+        connecting
+      ) {
+        return;
+      }
+
+      setJoinPin(
+        (current) =>
+          current.slice(
+            0,
+            -1
+          )
+      );
+    };
+
+  /*
+   * ======================================================
+   * SEND MESSAGE
+   * ======================================================
+   */
+
+  const sendMessage =
+    () => {
+      const text =
+        draft.trim();
+
+      const connection =
+        connectionRef.current;
+
+      if (
+        !text ||
+        !connected ||
+        !connection ||
+        !connection.open
+      ) {
+        return;
+      }
+
+      const message = {
+        type:
+          "chat",
+
+        id:
+          crypto.randomUUID(),
+
+        text,
+
+        time:
+          getTime(),
+      };
+
+      connection.send(
+        message
+      );
+
+      setMessages(
+        (current) => [
+          ...current,
+
+          {
+            id:
+              message.id,
+
+            sender:
+              "me",
+
+            text:
+              message.text,
+
+            time:
+              message.time,
+          },
+        ]
+      );
+
+      setDraft("");
+    };
+
+  /*
+   * ======================================================
+   * SEND FILE / CAMERA PHOTO
+   * ======================================================
+   */
+
+  const sendFile =
+    async (
+      file: File
+    ) => {
+      const connection =
+        connectionRef.current;
+
+      if (
+        !connected ||
+        !connection ||
+        !connection.open
+      ) {
+        return;
+      }
+
+      if (
+        file.size >
+        MAX_FILE_SIZE
+      ) {
+        addSystem(
+          "Maximum file size is 10 MB."
+        );
+
+        return;
+      }
+
+      try {
+        const buffer =
+          await file.arrayBuffer();
+
+        const id =
+          crypto.randomUUID();
+
+        const time =
+          getTime();
+
+        const mime =
+          file.type ||
+          "application/octet-stream";
+
+        connection.send({
+          type:
+            "file",
+
+          id,
+
+          name:
+            file.name,
+
+          mime,
+
+          size:
+            file.size,
+
+          buffer,
+
+          time,
+        });
+
+        const url =
+          URL.createObjectURL(
+            file
+          );
+
+        objectUrlsRef.current.push(
+          url
+        );
+
+        setFiles(
+          (current) => [
+            ...current,
+
+            {
+              id,
+
+              name:
+                file.name,
+
+              mime,
+
+              size:
+                file.size,
+
+              url,
+
+              sender:
+                "me",
+
+              time,
+            },
+          ]
+        );
+      } catch {
+        addSystem(
+          "File could not be sent."
+        );
+      }
+    };
+
+  /*
+   * ======================================================
    * SHARE LINK
-   * =====================================================
+   * ======================================================
    */
 
   const shareUrl =
@@ -1120,9 +1434,9 @@ export default function WebChatPage() {
       : "";
 
   /*
-   * =====================================================
-   * COPY
-   * =====================================================
+   * ======================================================
+   * COPY LINK
+   * ======================================================
    */
 
   const copyInvite =
@@ -1136,99 +1450,63 @@ export default function WebChatPage() {
           shareUrl
         );
 
-        setCopied(true);
+        setCopied(
+          true
+        );
 
         setTimeout(
-          () => {
-            setCopied(false);
-          },
+          () =>
+            setCopied(
+              false
+            ),
           1500
         );
-      } catch (error) {
-        console.error(
-          "[WHOLEGACY P2P] Clipboard error",
-          error
+      } catch {
+        setCopied(
+          false
         );
       }
     };
 
   /*
-   * =====================================================
-   * SEND MESSAGE
-   * =====================================================
+   * ======================================================
+   * COPY PIN
+   * ======================================================
    */
 
-  const sendMessage =
-    () => {
-      const text =
-        draft.trim();
-
-      const connection =
-        connectionRef.current;
-
-      if (
-        !connected ||
-        !connection ||
-        !connection.open ||
-        !text
-      ) {
+  const copyPin =
+    async () => {
+      if (!pin) {
         return;
       }
 
-      const message = {
-        type: "chat",
-
-        id:
-          crypto.randomUUID(),
-
-        text,
-
-        time:
-          getTime(),
-      };
-
       try {
-        connection.send(
-          message
+        await navigator.clipboard.writeText(
+          pin
         );
 
-        setMessages(
-          (current) => [
-            ...current,
-
-            {
-              id:
-                message.id,
-
-              sender:
-                "me",
-
-              text:
-                message.text,
-
-              time:
-                message.time,
-            },
-          ]
+        setCopiedPin(
+          true
         );
 
-        setDraft("");
-      } catch (error) {
-        console.error(
-          "[WHOLEGACY P2P] Send failed",
-          error
+        setTimeout(
+          () =>
+            setCopiedPin(
+              false
+            ),
+          1500
         );
-
-        addSystem(
-          "Message could not be sent."
+      } catch {
+        setCopiedPin(
+          false
         );
       }
     };
 
   /*
-   * =====================================================
-   * LEAVE
-   * =====================================================
+   * ======================================================
+   * LEAVE ROOM
+   * ======================================================
    */
 
   const leave =
@@ -1248,11 +1526,13 @@ export default function WebChatPage() {
       roomIdRef.current =
         "";
 
-      passwordRef.current =
+      pinRef.current =
         "";
 
       roleRef.current =
         null;
+
+      revokeObjectUrls();
 
       setMode(
         "choose"
@@ -1260,21 +1540,27 @@ export default function WebChatPage() {
 
       setRoomId("");
 
-      setPassword("");
+      setHostPeerId("");
+
+      setPin("");
+
+      setJoinPin("");
 
       setJoinRoom("");
 
-      setJoinPassword("");
+      setConnected(
+        false
+      );
 
-      setHostPeerId("");
-
-      setConnected(false);
-
-      setConnecting(false);
+      setConnecting(
+        false
+      );
 
       setDraft("");
 
       setMessages([]);
+
+      setFiles([]);
 
       if (
         typeof window !==
@@ -1289,9 +1575,9 @@ export default function WebChatPage() {
     };
 
   /*
-   * =====================================================
-   * CLEANUP
-   * =====================================================
+   * ======================================================
+   * COMPONENT CLEANUP
+   * ======================================================
    */
 
   useEffect(() => {
@@ -1301,21 +1587,28 @@ export default function WebChatPage() {
       connectionRef.current?.close();
 
       peerRef.current?.destroy();
+
+      revokeObjectUrls();
     };
-  }, [clearTimers]);
+  }, [
+    clearTimers,
+    revokeObjectUrls,
+  ]);
 
   /*
-   * =====================================================
-   * HOME
-   * =====================================================
+   * ======================================================
+   * HOME / CREATE ROOM
+   * ======================================================
    */
 
   if (
-    mode === "choose"
+    mode ===
+    "choose"
   ) {
     return (
       <main className="p2p-page">
         <div className="p2p-shell p2p-center">
+
           <a
             href="/"
             className="p2p-brand"
@@ -1331,9 +1624,9 @@ export default function WebChatPage() {
           </a>
 
           <div className="p2p-hero">
+
             <div className="p2p-kicker">
-              PRIVATE PEER-TO-PEER
-              CHAT
+              PRIVATE PEER-TO-PEER CHAT
             </div>
 
             <h1>
@@ -1346,19 +1639,98 @@ export default function WebChatPage() {
             </h1>
 
             <p>
-              Create a temporary
-              room, share the invite
-              link and password, then
-              chat directly between
-              the two browsers.
+              Create a temporary private room,
+              choose a 4–6 digit PIN and share
+              the invitation link.
             </p>
+
+          </div>
+
+          <div
+            style={{
+              width:
+                "min(760px, 100%)",
+              marginBottom:
+                "14px",
+            }}
+          >
+
+            <label
+              style={{
+                display:
+                  "block",
+                marginBottom:
+                  "8px",
+                fontSize:
+                  "9px",
+                letterSpacing:
+                  ".18em",
+                fontWeight:
+                  700,
+                color:
+                  "#77736c",
+              }}
+            >
+              CREATE ROOM PIN
+            </label>
+
+            <input
+              type="password"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={6}
+              value={pin}
+              onChange={(
+                event
+              ) => {
+                const value =
+                  event.target.value.replace(
+                    /\D/g,
+                    ""
+                  );
+
+                setPin(
+                  value.slice(
+                    0,
+                    6
+                  )
+                );
+              }}
+              placeholder="4–6 digit PIN"
+              autoComplete="new-password"
+              style={{
+                width:
+                  "100%",
+                boxSizing:
+                  "border-box",
+                border:
+                  "1px solid #cfcbc4",
+                background:
+                  "#ffffff",
+                padding:
+                  "14px 15px",
+                outline:
+                  "none",
+                fontSize:
+                  "18px",
+                letterSpacing:
+                  ".25em",
+              }}
+            />
+
           </div>
 
           <div className="p2p-choice-grid">
+
             <button
               className="p2p-choice"
               onClick={
                 createRoom
+              }
+              disabled={
+                !/^\d{4,6}$/.test(
+                  pin
+                )
               }
             >
               <span className="p2p-choice-number">
@@ -1370,16 +1742,17 @@ export default function WebChatPage() {
               </strong>
 
               <small>
-                Generate a private
-                room, password and
-                invite link.
+                Create a private room protected
+                by your own PIN.
               </small>
             </button>
 
             <button
               className="p2p-choice"
               onClick={() =>
-                setMode("join")
+                setMode(
+                  "join"
+                )
               }
             >
               <span className="p2p-choice-number">
@@ -1391,37 +1764,48 @@ export default function WebChatPage() {
               </strong>
 
               <small>
-                Enter a private
-                invitation.
+                Open an invitation and enter
+                the room PIN.
               </small>
             </button>
+
           </div>
 
           <div className="p2p-note">
             <span>●</span>
-
             No account required ·
-            No chat history stored
-            by WHOLEGACY
+            No chat history stored by WHOLEGACY
           </div>
+
         </div>
       </main>
     );
   }
 
   /*
-   * =====================================================
-   * JOIN FORM
-   * =====================================================
+   * ======================================================
+   * USER 2 PIN KEYPAD
+   * ======================================================
    */
 
   if (
-    mode === "join" &&
+    mode ===
+      "join" &&
     !connected
   ) {
+    const lastSystemMessage =
+      messages
+        .filter(
+          (message) =>
+            message.sender ===
+            "system"
+        )
+        .slice(-1)[0];
+
     return (
       <main className="p2p-page">
-        <div className="p2p-shell p2p-center">
+        <div className="p2p-pin-page">
+
           <a
             href="/"
             className="p2p-brand"
@@ -1436,123 +1820,164 @@ export default function WebChatPage() {
             </span>
           </a>
 
-          <div className="p2p-panel">
+          <div className="p2p-pin-box">
+
             <div className="p2p-kicker">
-              JOIN PRIVATE ROOM
+              PRIVATE ROOM
             </div>
 
             <h1>
-              Enter the room.
+              Enter PIN
             </h1>
 
             <p>
-              Use the room ID and
-              password shared with
-              you.
+              Enter the PIN shared by
+              the room creator.
             </p>
 
-            <label>
-              ROOM ID
-            </label>
+            <div className="p2p-pin-dots">
 
-            <input
-              value={
-                joinRoom
-              }
-              onChange={(
-                event
-              ) =>
-                setJoinRoom(
-                  event.target.value.toUpperCase()
-                )
-              }
-              placeholder="XXXXXXXX"
-              autoComplete="off"
-            />
-
-            <label>
-              PASSWORD
-            </label>
-
-            <input
-              value={
-                joinPassword
-              }
-              onChange={(
-                event
-              ) =>
-                setJoinPassword(
-                  event.target.value
-                )
-              }
-              type="password"
-              placeholder="Room password"
-              autoComplete="off"
-              onKeyDown={(
-                event
-              ) => {
-                if (
-                  event.key ===
-                    "Enter" &&
-                  !connecting
-                ) {
-                  joinRoomNow();
-                }
-              }}
-            />
-
-            <button
-              className="p2p-primary"
-              onClick={
-                joinRoomNow
-              }
-              disabled={
-                connecting ||
-                !joinRoom.trim() ||
-                !joinPassword.trim() ||
-                !hostPeerId
-              }
-            >
-              {connecting
-                ? "Connecting…"
-                : "Enter private room →"}
-            </button>
-
-            {!hostPeerId && (
-              <div className="p2p-error">
-                Open the complete
-                invitation link from
-                the room creator.
-              </div>
-            )}
-
-            {messages
-              .filter(
-                (message) =>
-                  message.sender ===
-                  "system"
-              )
-              .map(
-                (message) => (
-                  <div
-                    className="p2p-status-message"
+              {Array.from({
+                length:
+                  Math.max(
+                    4,
+                    joinPin.length
+                  ),
+              }).map(
+                (
+                  _,
+                  index
+                ) => (
+                  <span
                     key={
-                      message.id
+                      index
                     }
-                  >
-                    {
-                      message.text
+                    className={
+                      index <
+                      joinPin.length
+                        ? "filled"
+                        : ""
                     }
-                  </div>
+                  />
                 )
               )}
 
+            </div>
+
+            <div className="p2p-keypad">
+
+              {[
+                "1",
+                "2",
+                "3",
+                "4",
+                "5",
+                "6",
+                "7",
+                "8",
+                "9",
+              ].map(
+                (
+                  number
+                ) => (
+                  <button
+                    type="button"
+                    key={
+                      number
+                    }
+                    onClick={() =>
+                      pressPin(
+                        number
+                      )
+                    }
+                    disabled={
+                      connecting
+                    }
+                  >
+                    {number}
+                  </button>
+                )
+              )}
+
+              <button
+                type="button"
+                onClick={
+                  deletePin
+                }
+                disabled={
+                  connecting ||
+                  joinPin.length ===
+                    0
+                }
+                aria-label="Delete PIN digit"
+              >
+                ←
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  pressPin(
+                    "0"
+                  )
+                }
+                disabled={
+                  connecting
+                }
+              >
+                0
+              </button>
+
+              <button
+                type="button"
+                className="p2p-pin-enter"
+                onClick={
+                  joinRoomNow
+                }
+                disabled={
+                  connecting ||
+                  joinPin.length <
+                    4 ||
+                  !hostPeerId ||
+                  !joinRoom
+                }
+                aria-label="Enter private room"
+              >
+                →
+              </button>
+
+            </div>
+
+            {connecting && (
+              <div className="p2p-pin-status">
+                Connecting…
+              </div>
+            )}
+
+            {!hostPeerId && (
+              <div className="p2p-pin-status">
+                Open the complete invitation
+                link from the room creator.
+              </div>
+            )}
+
+            {!connecting &&
+              lastSystemMessage && (
+                <div className="p2p-pin-status">
+                  {
+                    lastSystemMessage.text
+                  }
+                </div>
+              )}
+
             <button
+              type="button"
               className="p2p-back"
               onClick={leave}
             >
               ← Back
             </button>
+
           </div>
         </div>
       </main>
@@ -1560,16 +1985,20 @@ export default function WebChatPage() {
   }
 
   /*
-   * =====================================================
-   * CHAT
-   * =====================================================
+   * ======================================================
+   * CHAT SCREEN
+   * ======================================================
    */
 
   return (
     <main className="p2p-page">
+
       <div className="p2p-chat-shell">
+
         <header className="p2p-chat-header">
+
           <div>
+
             <a
               href="/"
               className="p2p-mini-brand"
@@ -1580,17 +2009,19 @@ export default function WebChatPage() {
               />
 
               <span>
-                WHOLEGACY /
-                PRIVATE CHAT
+                WHOLEGACY / PRIVATE CHAT
               </span>
             </a>
 
             <div className="p2p-room-line">
+
               ROOM{" "}
 
               <strong>
-                {roomId ||
-                  joinRoom}
+                {
+                  roomId ||
+                  joinRoom
+                }
               </strong>
 
               <span
@@ -1608,7 +2039,9 @@ export default function WebChatPage() {
                   ? "CONNECTING"
                   : "WAITING"}
               </span>
+
             </div>
+
           </div>
 
           <button
@@ -1617,38 +2050,57 @@ export default function WebChatPage() {
           >
             Leave
           </button>
+
         </header>
 
-        {mode === "host" && (
+        {mode ===
+          "host" && (
           <section className="p2p-invite">
+
             <div>
+
               <span>
                 INVITE
               </span>
 
               <strong>
-                Share this link +
-                password
+                Share this link + PIN
               </strong>
 
               <code>
                 {shareUrl ||
                   "Generating peer address…"}
               </code>
+
             </div>
 
             <div className="p2p-invite-actions">
+
               <div className="p2p-password">
+
                 <small>
-                  PASSWORD
+                  PIN
                 </small>
 
                 <b>
-                  {password}
+                  {pin}
                 </b>
+
               </div>
 
               <button
+                type="button"
+                onClick={
+                  copyPin
+                }
+              >
+                {copiedPin
+                  ? "PIN copied ✓"
+                  : "Copy PIN"}
+              </button>
+
+              <button
+                type="button"
                 onClick={
                   copyInvite
                 }
@@ -1657,10 +2109,12 @@ export default function WebChatPage() {
                 }
               >
                 {copied
-                  ? "Copied ✓"
+                  ? "Link copied ✓"
                   : "Copy link"}
               </button>
+
             </div>
+
           </section>
         )}
 
@@ -1668,28 +2122,34 @@ export default function WebChatPage() {
           className="p2p-messages"
           aria-live="polite"
         >
+
           {messages.length ===
-            0 && (
-            <div className="p2p-empty">
-              <span>
-                ∞
-              </span>
+            0 &&
+            files.length ===
+              0 && (
+              <div className="p2p-empty">
 
-              <strong>
-                Your private
-                conversation starts
-                here.
-              </strong>
+                <span>
+                  ∞
+                </span>
 
-              <small>
-                Browser-to-browser
-                private connection.
-              </small>
-            </div>
-          )}
+                <strong>
+                  Your private conversation
+                  starts here.
+                </strong>
+
+                <small>
+                  Browser-to-browser private
+                  connection.
+                </small>
+
+              </div>
+            )}
 
           {messages.map(
-            (message) => {
+            (
+              message
+            ) => {
               if (
                 message.sender ===
                 "system"
@@ -1717,6 +2177,7 @@ export default function WebChatPage() {
                     message.id
                   }
                 >
+
                   <div>
                     {
                       message.text
@@ -1728,11 +2189,159 @@ export default function WebChatPage() {
                       message.time
                     }
                   </time>
+
                 </div>
               );
             }
           )}
+
+          {files.map(
+            (
+              file
+            ) => (
+              <div
+                className={`p2p-message ${file.sender}`}
+                key={
+                  file.id
+                }
+              >
+
+                <div className="p2p-file-card">
+
+                  {file.mime.startsWith(
+                    "image/"
+                  ) ? (
+                    <>
+
+                      <img
+                        src={
+                          file.url
+                        }
+                        alt={
+                          file.name
+                        }
+                        className="p2p-chat-image"
+                        style={{
+                          display:
+                            "block",
+                          width:
+                            "min(320px, 100%)",
+                          maxHeight:
+                            "420px",
+                          objectFit:
+                            "cover",
+                          borderRadius:
+                            "4px",
+                        }}
+                      />
+
+                      <a
+                        href={
+                          file.url
+                        }
+                        download={
+                          file.name
+                        }
+                      >
+                        Download photo
+                      </a>
+
+                    </>
+                  ) : (
+                    <>
+
+                      <strong>
+                        {
+                          file.name
+                        }
+                      </strong>
+
+                      <small>
+                        {(
+                          file.size /
+                          1024 /
+                          1024
+                        ).toFixed(
+                          2
+                        )}{" "}
+                        MB
+                      </small>
+
+                      <a
+                        href={
+                          file.url
+                        }
+                        download={
+                          file.name
+                        }
+                      >
+                        Download file
+                      </a>
+
+                    </>
+                  )}
+
+                </div>
+
+                <time>
+                  {
+                    file.time
+                  }
+                </time>
+
+              </div>
+            )
+          )}
+
         </section>
+
+        <input
+          ref={
+            fileInputRef
+          }
+          type="file"
+          hidden
+          onChange={(
+            event
+          ) => {
+            const file =
+              event.target.files?.[0];
+
+            if (file) {
+              sendFile(
+                file
+              );
+            }
+
+            event.currentTarget.value =
+              "";
+          }}
+        />
+
+        <input
+          ref={
+            cameraInputRef
+          }
+          type="file"
+          accept="image/*"
+          capture="environment"
+          hidden
+          onChange={(
+            event
+          ) => {
+            const file =
+              event.target.files?.[0];
+
+            if (file) {
+              sendFile(
+                file
+              );
+            }
+
+            event.currentTarget.value =
+              "";
+          }}
+        />
 
         <form
           className="p2p-composer"
@@ -1744,8 +2353,73 @@ export default function WebChatPage() {
             sendMessage();
           }}
         >
+
+          <button
+            type="button"
+            onClick={() =>
+              fileInputRef.current?.click()
+            }
+            disabled={
+              !connected
+            }
+            title="Attach file"
+            style={{
+              minWidth:
+                "42px",
+              border:
+                "1px solid #cfcbc4",
+              background:
+                "#f3f1ec",
+              color:
+                "#37342f",
+              cursor:
+                connected
+                  ? "pointer"
+                  : "not-allowed",
+              opacity:
+                connected
+                  ? 1
+                  : 0.35,
+            }}
+          >
+            +
+          </button>
+
+          <button
+            type="button"
+            onClick={() =>
+              cameraInputRef.current?.click()
+            }
+            disabled={
+              !connected
+            }
+            title="Take photo"
+            style={{
+              border:
+                "1px solid #cfcbc4",
+              background:
+                "#f3f1ec",
+              color:
+                "#37342f",
+              padding:
+                "0 14px",
+              cursor:
+                connected
+                  ? "pointer"
+                  : "not-allowed",
+              opacity:
+                connected
+                  ? 1
+                  : 0.35,
+            }}
+          >
+            Camera
+          </button>
+
           <input
-            value={draft}
+            value={
+              draft
+            }
             onChange={(
               event
             ) =>
@@ -1772,8 +2446,11 @@ export default function WebChatPage() {
           >
             Send →
           </button>
+
         </form>
+
       </div>
+
     </main>
   );
 }
