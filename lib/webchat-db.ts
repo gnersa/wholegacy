@@ -1,15 +1,21 @@
 import { neon } from "@neondatabase/serverless";
 
 if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL is not configured.");
+  throw new Error(
+    "DATABASE_URL is not configured."
+  );
 }
 
-export const webchatSql = neon(process.env.DATABASE_URL);
+export const webchatSql = neon(
+  process.env.DATABASE_URL
+);
 
 let initialized = false;
 
 export async function ensureWebchatTables() {
-  if (initialized) return;
+  if (initialized) {
+    return;
+  }
 
   await webchatSql`
     CREATE TABLE IF NOT EXISTS webchat_rooms (
@@ -37,7 +43,10 @@ export async function ensureWebchatTables() {
 
   await webchatSql`
     CREATE INDEX IF NOT EXISTS webchat_messages_room_seq_idx
-    ON webchat_messages (room_id, seq)
+    ON webchat_messages (
+      room_id,
+      seq
+    )
   `;
 
   initialized = true;
