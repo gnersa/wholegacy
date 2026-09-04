@@ -188,10 +188,11 @@ export default function HomePage() {
             <a href="#how">How It Works</a>
             <a href="#explore">Explore</a>
             <a href="#faq">FAQ</a>
+            <a href="/webchat">Private Chat</a>
           </nav>
 
-          <a href="#start" className="wl-nav-button">
-            Start Your Legacy
+          <a href="/webchat" className="wl-nav-button">
+            Private Chat
           </a>
         </div>
       </header>
